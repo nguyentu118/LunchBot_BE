@@ -43,11 +43,12 @@ public class Merchant {
     @ColumnDefault("0.00")
     private BigDecimal revenueTotal = BigDecimal.ZERO;
 
-    @Column(nullable = false)
-    private Boolean isPartner = false;
+    @Column(name = "is_locked", nullable = false)
+    private boolean isLocked = false; // primitive boolean defaults to false -> NOT NULL safe
 
-    @Column(nullable = false)
-    private Boolean isLocked = false;
+    @Column(name = "is_partner", nullable = false)
+    private boolean isPartner = false;
+
 
     private LocalDateTime partnerRequestedAt;
     private LocalDateTime approvedAt;

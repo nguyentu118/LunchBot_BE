@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Ký Merchant Thành Công</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eeeeee;
+        }
+        .header h1 {
+            color: #3f51b5; /* Màu thương hiệu */
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px 0;
+        }
+        .content p {
+            margin-bottom: 15px;
+        }
+        .details {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 5px solid #4caf50;
+            margin: 20px 0;
+        }
+        .details strong {
+            display: inline-block;
+            min-width: 120px;
+        }
+        .footer {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #eeeeee;
+            font-size: 12px;
+            color: #999999;
+        }
+        .button-link {
+            display: inline-block;
+            padding: 10px 20px;
+            margin-top: 15px;
+            background-color: #4caf50;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🎉 Đăng Ký Thành Công!</h1>
+    </div>
+    <div class="content">
+        <p>Xin chào ${fullName},</p>
+        <p>Chúng tôi rất vui mừng thông báo bạn đã đăng ký thành công tài khoản Merchant trên hệ thống **LunchBot**.</p>
+
+        <p>Thông tin cơ bản của Merchant của bạn đã được ghi nhận và đang chờ đội ngũ của chúng tôi xem xét.</p>
+
+        <div class="details">
+            <p><strong>Tên Cửa hàng:</strong> ${restaurantName}</p>
+            <p><strong>Email đăng nhập:</strong> ${email}</p>
+            <p><strong>Vai trò:</strong> MERCHANT</p>
+        </div>
+
+        <p>Vui lòng click vào nút bên dưới để truy cập vào trang quản lý Merchant của bạn:</p>
+
+        <p style="text-align: center;">
+            <a href="${loginUrl}" class="button-link">ĐĂNG NHẬP VÀO HỆ THỐNG</a>
+        </p>
+
+        <p>Cảm ơn bạn đã tham gia cộng đồng của chúng tôi!</p>
+        <p>Trân trọng,<br>Đội ngũ LunchBot.</p>
+    </div>
+    <div class="footer">
+        <p>&copy; ${currentYear} LunchBot. Tất cả quyền được bảo lưu.</p>
+    </div>
+</div>
+</body>
+</html>
