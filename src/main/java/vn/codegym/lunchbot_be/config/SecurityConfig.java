@@ -25,7 +25,6 @@ public class SecurityConfig {
 
                 // 2. Cấu hình quyền truy cập (Authorization)
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/test/**").permitAll()
                         // Cho phép tất cả các request POST đến endpoint đăng ký Merchant mà không cần xác thực
                         .requestMatchers("/api/auth/register/merchant").permitAll()
 
