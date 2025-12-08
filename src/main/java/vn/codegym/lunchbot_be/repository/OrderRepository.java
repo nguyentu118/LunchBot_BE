@@ -27,6 +27,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByUserIdAndStatus(Long userId, OrderStatus status);
     List<Order> findByMerchantIdAndStatus(Long merchantId, OrderStatus status);
 
+    Long countByMerchantId(Long merchantId);
+    Long countByMerchantIdAndStatus(Long merchantId, Enum status);
+
     @Query("SELECT o FROM Order o WHERE o.orderNumber LIKE %:keyword% " +
             "OR o.user.email LIKE %:keyword% OR o.user.phone LIKE %:keyword%")
     List<Order> searchOrders(@Param("keyword") String keyword);

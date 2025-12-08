@@ -1,8 +1,7 @@
-package vn.codegym.lunchbot_be.service;
+package vn.codegym.lunchbot_be.service.impl;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,6 +14,7 @@ import vn.codegym.lunchbot_be.model.User;
 import vn.codegym.lunchbot_be.model.enums.UserRole;
 import vn.codegym.lunchbot_be.repository.MerchantRepository;
 import vn.codegym.lunchbot_be.repository.UserRepository;
+import vn.codegym.lunchbot_be.service.EmailService;
 import vn.codegym.lunchbot_be.util.JwtUtil;
 
 
@@ -28,7 +28,7 @@ public class AuthService {
 
     private final PasswordEncoder passwordEncoder;
 
-    private final EmailService emailService; // Cần tạo EmailService
+    private final EmailService emailService;
 
     private final JwtUtil jwtUtil;
 

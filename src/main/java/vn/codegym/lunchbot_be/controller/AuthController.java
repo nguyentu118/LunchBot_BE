@@ -2,7 +2,6 @@ package vn.codegym.lunchbot_be.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -15,7 +14,7 @@ import vn.codegym.lunchbot_be.dto.request.MerchantRegisterRequest;
 import vn.codegym.lunchbot_be.dto.response.AuthResponse;
 import vn.codegym.lunchbot_be.dto.request.LoginRequest;
 import vn.codegym.lunchbot_be.dto.request.RegistrationRequest;
-import vn.codegym.lunchbot_be.service.AuthService;
+import vn.codegym.lunchbot_be.service.impl.AuthService;
 
 import java.util.stream.Collectors;
 

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Merchant Rejected</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f44336; color: white; padding: 20px; text-align: center; }
+        .content { padding: 30px; background-color: #f9f9f9; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+        .button { background-color: #2196F3; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>❌ Thông báo về việc xét duyệt tài khoản merchant</h1>
+    </div>
+    <div class="content">
+        <p>Kính chào <strong th:text="${merchantName}"></strong>,</p>
+
+        <p>Chúng tôi rất tiếc phải thông báo rằng tài khoản merchant cho nhà hàng
+            <strong th:text="${restaurantName}"></strong> của bạn chưa được phê duyệt.</p>
+
+        <p><strong>Lý do:</strong> <span th:text="${reason}"></span></p>
+
+        <p>Để được phê duyệt, bạn cần:</p>
+        <ol>
+            <li>Kiểm tra và cập nhật thông tin theo lý do trên</li>
+            <li>Đảm bảo các giấy tờ là hợp lệ và rõ ràng</li>
+            <li>Gửi lại đơn đăng ký sau khi đã chỉnh sửa</li>
+        </ol>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a th:href="${appUrl + '/merchant/register'}" class="button">
+                Đăng ký lại
+            </a>
+        </div>
+
+        <p>Nếu bạn có bất kỳ câu hỏi nào về quyết định này, vui lòng liên hệ với chúng tôi qua email:
+            <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}"></a></p>
+    </div>
+    <div class="footer">
+        <p>Email này được gửi tự động từ hệ thống <strong th:text="${appName}"></strong>.</p>
+        <p>Ngày gửi: <span th:text="${currentDate}"></span></p>
+    </div>
+</div>
+</body>
+</html>
