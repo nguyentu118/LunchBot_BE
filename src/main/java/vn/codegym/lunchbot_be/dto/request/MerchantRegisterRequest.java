@@ -1,4 +1,4 @@
-package vn.codegym.lunchbot_be.dto;
+package vn.codegym.lunchbot_be.dto.request;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;

@@ -1,11 +1,11 @@
-package vn.codegym.lunchbot_be.service;
+package vn.codegym.lunchbot_be.service.impl;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import vn.codegym.lunchbot_be.dto.MerchantRegisterRequest;
+import vn.codegym.lunchbot_be.dto.request.MerchantRegisterRequest;
 import vn.codegym.lunchbot_be.model.Merchant;
 import vn.codegym.lunchbot_be.model.User;
 import vn.codegym.lunchbot_be.model.enums.UserRole;
@@ -26,7 +26,7 @@ public class AuthService {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private EmailService emailService; // Cần tạo EmailService
+    private EmailServiceImpl emailService; // Cần tạo EmailService
 
     @Transactional
     public User registerMerchant(MerchantRegisterRequest request) {

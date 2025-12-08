@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Merchant Approval</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #28a745; color: white; padding: 20px; text-align: center; }
+    .content { padding: 20px; background: #f8f9fa; }
+    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+    .button { background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🎉 Chúc mừng!</h1>
+    <h2>Tài khoản merchant đã được phê duyệt</h2>
+  </div>
+
+  <div class="content">
+    <p>Kính chào <strong th:text="${merchantName}">Merchant Name</strong>,</p>
+
+    <p>Chúc mừng! Tài khoản merchant cho nhà hàng <strong th:text="${restaurantName}">Restaurant Name</strong> của bạn đã được phê duyệt thành công.</p>
+
+    <div style="background: #d4edda; padding: 15px; border-left: 4px solid #28a745; margin: 20px 0;">
+      <strong>Lý do phê duyệt:</strong>
+      <p th:text="${reason}">Approval reason</p>
+    </div>
+
+    <p>Bạn có thể đăng nhập và bắt đầu quản lý nhà hàng của mình ngay bây giờ:</p>
+
+    <div style="text-align: center; margin: 30px 0;">
+      <a th:href="${appUrl}" class="button">Đăng nhập ngay</a>
+    </div>
+
+    <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email: <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}">support email</a></p>
+  </div>
+
+  <div class="footer">
+    <p>Email được gửi tự động từ <span th:text="${appName}">App Name</span> vào <span th:text="${currentDate}">Date</span></p>
+    <p>© 2024 <span th:text="${appName}">App Name</span>. All rights reserved.</p>
+  </div>
+</div>
+</body>
+</html>
