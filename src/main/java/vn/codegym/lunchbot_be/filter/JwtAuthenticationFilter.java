@@ -6,70 +6,68 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import vn.codegym.lunchbot_be.model.User;
+import vn.codegym.lunchbot_be.repository.UserRepository;
+import vn.codegym.lunchbot_be.service.impl.UserDetailsImpl;
 import vn.codegym.lunchbot_be.util.JwtUtil;
 
 import java.io.IOException;
-import java.util.Collections;
 
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-    private final UserDetailsService userDetailsService;
+    private final UserRepository userRepository;  // ← THÊM dependency này
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        try {
+            String jwt = getJwtFromRequest(request);
 
-        // Lấy JWT từ header
-        String authorizationHeader = request.getHeader("Authorization");
+            if (jwt != null && jwtUtil.validateToken(jwt)) {
+                // Lấy email từ token
+                String email = jwtUtil.extractEmail(jwt);  // ← Dùng extractEmail()
 
-        String email = null;
-        String jwt = null;
+                // Lấy User từ database
+                User user = userRepository.findByEmail(email)
+                        .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
 
-        // Kiểm tra header có chứa Bearer token không
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            jwt = authorizationHeader.substring(7);
-            try {
-                email = jwtUtil.extractEmail(jwt);
-            } catch (Exception e) {
-                logger.error("Không thể lấy email từ JWT token: " + e.getMessage());
-            }
-        }
+                // Build UserDetailsImpl từ User
+                UserDetailsImpl userDetails = UserDetailsImpl.build(user);
 
-        // Validate token và set authentication
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(email);
-
-            if (jwtUtil.validateToken(jwt, userDetails)) {
-                // Lấy role từ token
-                String role = jwtUtil.extractRole(jwt);
-
-                UsernamePasswordAuthenticationToken authenticationToken =
+                // Tạo Authentication với userDetails làm principal
+                UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
-                                userDetails,
+                                userDetails,                    // ← Principal (QUAN TRỌNG!)
                                 null,
-                                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
+                                userDetails.getAuthorities()
                         );
 
-                authenticationToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                // Set vào SecurityContext
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
+        } catch (Exception e) {
+            logger.error("Cannot set user authentication: {}");
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private String getJwtFromRequest(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null;
     }
 }

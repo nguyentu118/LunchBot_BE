@@ -11,6 +11,7 @@ import vn.codegym.lunchbot_be.dto.request.LoginRequest;
 import vn.codegym.lunchbot_be.dto.request.RegistrationRequest;
 import vn.codegym.lunchbot_be.model.Merchant;
 import vn.codegym.lunchbot_be.model.User;
+import vn.codegym.lunchbot_be.model.enums.MerchantStatus;
 import vn.codegym.lunchbot_be.model.enums.UserRole;
 import vn.codegym.lunchbot_be.repository.MerchantRepository;
 import vn.codegym.lunchbot_be.repository.UserRepository;
@@ -20,7 +21,7 @@ import vn.codegym.lunchbot_be.util.JwtUtil;
 
 @Service
 @RequiredArgsConstructor
-public class AuthService {
+public class AuthServiceImpl {
 
     private final UserRepository userRepository;
 
@@ -57,7 +58,12 @@ public class AuthService {
                         ? request.getRestaurantName()
                         : request.getEmail()) // Dùng email nếu tên nhà hàng trống
                 .address(request.getAddress())
+                .phone(request.getPhone())
                 .user(user)
+                .isApproved(false)
+                .isPartner(false)
+                .isLocked(false)
+                .status(MerchantStatus.PENDING)
                 .build();
 
         merchantRepository.save(merchant);
@@ -80,15 +86,21 @@ public class AuthService {
             emailService.sendRegistrationSuccessEmail(
                     user.getEmail(),
                     recipientName,
-                    merchantName, // <--- SỬ DỤNG GIÁ TRỊ ĐÃ KHẮC PHỤC
+                    merchantName,
                     "http://localhost:5173/register-merchant",
                     true
             );
             String subject = "Đăng ký Merchant thành công!";
             String body = String.format("Chào mừng bạn %s, bạn đã đăng ký thành công làm Merchant. Thông tin nhà hàng: %s",
                     request.getEmail(), merchant.getRestaurantName());
-            emailService.sendRegistrationSuccessEmail(user.getEmail(), null, merchant.getRestaurantName(),
-                    "http://localhost:5173/register-merchant"); // Thay URL đăng nhập thực tế
+            emailService.sendRegistrationSuccessEmail(
+                    user.getEmail(),
+                    null,
+                    merchant.getRestaurantName(),
+                    "http://localhost:5173/register-merchant",
+                    true
+
+            ); // Thay URL đăng nhập thực tế
 
         } catch (Exception e) {
             // Xử lý lỗi gửi email (ví dụ: log lỗi)

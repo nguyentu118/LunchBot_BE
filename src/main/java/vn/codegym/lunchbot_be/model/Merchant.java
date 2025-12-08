@@ -54,22 +54,22 @@ public class Merchant {
 
     @Column(nullable = false)
     @ColumnDefault("false")
-    private Boolean isApproved = false; // Thêm trường này
+    private Boolean isApproved = false;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @ColumnDefault("'PENDING'")
-    private MerchantStatus status = MerchantStatus.PENDING; // Thêm status enum
+    private MerchantStatus status = MerchantStatus.PENDING;
 
     @Column(columnDefinition = "TEXT")
-    private String rejectionReason; // Lý do từ chối
+    private String rejectionReason;
 
     @CreationTimestamp
-    private LocalDateTime registrationDate; // Thêm ngày đăng ký
+    private LocalDateTime registrationDate;
 
-    private LocalDateTime approvalDate; // Thêm ngày duyệt
+    private LocalDateTime approvalDate;
     private LocalDateTime partnerRequestedAt;
-    private LocalDateTime lockedAt; // Thêm thời gian khóa
+    private LocalDateTime lockedAt;
 
     @Column(precision = 12, scale = 2)
     @ColumnDefault("0.00")
@@ -77,7 +77,7 @@ public class Merchant {
 
     @Column(precision = 6, scale = 5)
     @ColumnDefault("0.00001")
-    private BigDecimal commissionRate = new BigDecimal("0.00001"); // 0.001%
+    private BigDecimal commissionRate = new BigDecimal("0.00001");
 
     // Relationships
     @OneToMany(mappedBy = "merchant", cascade = CascadeType.ALL, orphanRemoval = true)
