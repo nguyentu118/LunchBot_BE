@@ -28,6 +28,9 @@ public class SecurityConfig {
                         // Cho phép tất cả các request POST đến endpoint đăng ký Merchant mà không cần xác thực
                         .requestMatchers("/api/auth/register/merchant").permitAll()
 
+                        // THÊM DÒNG NÀY: Cho phép truy cập admin API mà không cần xác thực (CHỈ DÙNG CHO TEST)
+                        .requestMatchers("/api/admin/**").permitAll()  // <-- THÊM DÒNG NÀY
+
                         // Cho phép các request GET công khai khác (ví dụ: đăng nhập, swagger)
                         .requestMatchers("/api/auth/**", "/public/**").permitAll()
 

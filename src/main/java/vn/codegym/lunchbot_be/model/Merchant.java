@@ -3,6 +3,8 @@ package vn.codegym.lunchbot_be.model;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.CreationTimestamp;
+import vn.codegym.lunchbot_be.model.enums.MerchantStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -43,15 +45,31 @@ public class Merchant {
     @ColumnDefault("0.00")
     private BigDecimal revenueTotal = BigDecimal.ZERO;
 
-    @Column(name = "is_locked", nullable = false)
-    private boolean isLocked = false; // primitive boolean defaults to false -> NOT NULL safe
+    @Column(nullable = false)
+    private Boolean isPartner = false;
 
-    @Column(name = "is_partner", nullable = false)
-    private boolean isPartner = false;
+    @Column(nullable = false)
+    @ColumnDefault("false")
+    private Boolean isLocked = false;
 
+    @Column(nullable = false)
+    @ColumnDefault("false")
+    private Boolean isApproved = false; // Thêm trường này
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @ColumnDefault("'PENDING'")
+    private MerchantStatus status = MerchantStatus.PENDING; // Thêm status enum
+
+    @Column(columnDefinition = "TEXT")
+    private String rejectionReason; // Lý do từ chối
+
+    @CreationTimestamp
+    private LocalDateTime registrationDate; // Thêm ngày đăng ký
+
+    private LocalDateTime approvalDate; // Thêm ngày duyệt
     private LocalDateTime partnerRequestedAt;
-    private LocalDateTime approvedAt;
+    private LocalDateTime lockedAt; // Thêm thời gian khóa
 
     @Column(precision = 12, scale = 2)
     @ColumnDefault("0.00")
@@ -91,5 +109,36 @@ public class Merchant {
         } else {
             this.commissionRate = new BigDecimal("0.00001"); // 0.001%
         }
+    }
+
+    // Thêm method mới
+    public void approve(String reason) {
+        this.status = MerchantStatus.APPROVED;
+        this.isApproved = true;
+        this.approvalDate = LocalDateTime.now();
+        this.rejectionReason = reason;
+        this.user.setIsActive(true); // Kích hoạt user
+    }
+
+    public void reject(String reason) {
+        this.status = MerchantStatus.REJECTED;
+        this.isApproved = false;
+        this.rejectionReason = reason;
+        this.user.setIsActive(false); // Vô hiệu hóa user
+    }
+
+    public void lock(String reason) {
+        this.status = MerchantStatus.LOCKED;
+        this.isLocked = true;
+        this.lockedAt = LocalDateTime.now();
+        this.rejectionReason = reason;
+        this.user.setIsActive(false); // Chặn đăng nhập
+    }
+
+    public void unlock(String reason) {
+        this.status = MerchantStatus.APPROVED;
+        this.isLocked = false;
+        this.rejectionReason = reason;
+        this.user.setIsActive(true); // Cho phép đăng nhập
     }
 }
