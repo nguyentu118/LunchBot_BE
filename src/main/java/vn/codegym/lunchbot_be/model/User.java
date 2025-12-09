@@ -1,5 +1,6 @@
 package vn.codegym.lunchbot_be.model;
 
+import vn.codegym.lunchbot_be.model.enums.Gender;
 import vn.codegym.lunchbot_be.model.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
@@ -7,6 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +36,11 @@ public class User {
     private String fullName;
     private String phone;
     private String avatarUrl;
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
+    private LocalDate dateOfBirth;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
