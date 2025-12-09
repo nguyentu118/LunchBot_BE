@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Merchant Account Unlocked</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #17a2b8; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background: #f8f9fa; }
+        .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+        .button { background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }
+        .info-box { background: #d1ecf1; padding: 15px; border-left: 4px solid #17a2b8; margin: 20px 0; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🔓 Tài khoản đã được mở khóa</h1>
+        <h2>Chào mừng bạn trở lại</h2>
+    </div>
+
+    <div class="content">
+        <p>Kính chào <strong th:text="${merchantName}">Merchant Name</strong>,</p>
+
+        <p>Chúng tôi vui mừng thông báo rằng tài khoản merchant cho nhà hàng <strong th:text="${restaurantName}">Restaurant Name</strong> của bạn đã được mở khóa.</p>
+
+        <div class="info-box">
+            <strong>Thông báo mở khóa:</strong>
+            <p th:text="${reason}">Unlock reason</p>
+            <p th:if="${lockPeriod}" style="margin-top: 10px;">
+                <strong>Thời gian khóa trước đó:</strong> <span th:text="${lockPeriod}"></span>
+            </p>
+        </div>
+
+        <p><strong>Tài khoản của bạn hiện đã có thể:</strong></p>
+        <ul>
+            <li>Đăng nhập vào hệ thống</li>
+            <li>Nhà hàng sẽ hiển thị lại trên nền tảng</li>
+            <li>Tiếp tục thực hiện giao dịch</li>
+            <li>Quản lý menu và đơn hàng</li>
+        </ul>
+
+        <p>Vui lòng đăng nhập để tiếp tục quản lý nhà hàng của bạn:</p>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a th:href="${loginUrl}" class="button">Đăng nhập ngay</a>
+        </div>
+
+        <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;">
+            <strong>💡 Lưu ý quan trọng:</strong>
+            <p style="margin: 5px 0 0 0;">Vui lòng tuân thủ các điều khoản và chính sách của nền tảng để tránh vi phạm trong tương lai.</p>
+        </div>
+
+        <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email:
+            <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}">support email</a>
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>Email được gửi tự động từ <span th:text="${appName}">App Name</span> vào <span th:text="${currentDate}">Date</span></p>
+        <p>© 2024 <span th:text="${appName}">App Name</span>. All rights reserved.</p>
+    </div>
+</div>
+</body>
+</html>

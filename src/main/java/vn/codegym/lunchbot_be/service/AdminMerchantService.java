@@ -16,6 +16,7 @@ public interface AdminMerchantService {
     AdminMerchantResponse getMerchantDetails(Long merchantId);
     AdminMerchantResponse approveMerchant(Long merchantId, MerchantApprovalRequest request);
     AdminMerchantResponse lockUnlockMerchant(Long merchantId, MerchantLockRequest request);
+    AdminMerchantResponse reProcessMerchant(Long merchantId, MerchantApprovalRequest request);
     Long countPendingMerchants();
     Long countLockedMerchants();
     Long countApprovedMerchants();

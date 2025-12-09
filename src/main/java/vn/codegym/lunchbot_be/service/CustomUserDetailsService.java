@@ -1,6 +1,7 @@
 package vn.codegym.lunchbot_be.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -24,6 +25,11 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         if (!user.getIsActive()) {
             throw new RuntimeException("Tài khoản đã bị vô hiệu hóa");
+        }
+        // 2. 🔑 LOGIC CHẶN ĐĂNG NHẬP MERCHANT ĐÃ BỊ KHÓA (TASK 28)
+        if (user.getMerchant() != null && user.getMerchant().getIsLocked()) {
+            // Spring Security sẽ bắt DisabledException và trả về lỗi đăng nhập
+            throw new DisabledException("Merchant của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
         }
 
         return new org.springframework.security.core.userdetails.User(

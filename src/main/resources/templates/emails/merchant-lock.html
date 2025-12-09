@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Merchant Account Locked</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #dc3545; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background: #f8f9fa; }
+        .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+        .button { background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }
+        .warning-box { background: #f8d7da; padding: 15px; border-left: 4px solid #dc3545; margin: 20px 0; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>⚠️ Thông báo quan trọng</h1>
+        <h2>Tài khoản merchant đã bị khóa</h2>
+    </div>
+
+    <div class="content">
+        <p>Kính chào <strong th:text="${merchantName}">Merchant Name</strong>,</p>
+
+        <p>Chúng tôi rất tiếc phải thông báo rằng tài khoản merchant cho nhà hàng <strong th:text="${restaurantName}">Restaurant Name</strong> của bạn đã bị khóa.</p>
+
+        <div class="warning-box">
+            <strong>Lý do khóa tài khoản:</strong>
+            <p th:text="${reason}">Lock reason</p>
+            <p th:if="${lockDuration}" style="margin-top: 10px;">
+                <strong>Thời gian khóa:</strong> <span th:text="${lockDuration}"></span>
+            </p>
+        </div>
+
+        <p><strong>Ảnh hưởng:</strong></p>
+        <ul>
+            <li>Bạn không thể đăng nhập vào tài khoản merchant</li>
+            <li>Nhà hàng sẽ không hiển thị trên nền tảng</li>
+            <li>Không thể thực hiện giao dịch mới</li>
+        </ul>
+
+        <p>Nếu bạn muốn khiếu nại hoặc cần thêm thông tin:</p>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a th:href="${appealUrl}" class="button" th:if="${appealUrl}">Gửi khiếu nại</a>
+            <a th:href="${supportUrl}" class="button" style="margin-left: 10px;" th:if="${supportUrl}">Liên hệ hỗ trợ</a>
+        </div>
+
+        <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email:
+            <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}">support email</a>
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>Email được gửi tự động từ <span th:text="${appName}">App Name</span> vào <span th:text="${currentDate}">Date</span></p>
+        <p>© 2024 <span th:text="${appName}">App Name</span>. All rights reserved.</p>
+    </div>
+</div>
+</body>
+</html>
