@@ -40,11 +40,13 @@ public class SecurityConfig {
 
                 // 3. Tắt HTTP Basic hoặc Form login mặc định nếu bạn dùng JWT
                 .httpBasic(httpBasic -> httpBasic.disable())
-                .formLogin(formLogin -> formLogin.disable());
+                .formLogin(formLogin -> formLogin.disable())
+                
+                // 4. Thêm cấu hình session management
+                .sessionManagement(session -> session
+                    .sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS)
+                );
 
         return http.build();
     }
-
-    // Đảm bảo bạn định nghĩa PasswordEncoder bean (ví dụ: BCryptPasswordEncoder)
-    // ...
 }

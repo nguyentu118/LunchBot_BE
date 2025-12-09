@@ -21,6 +21,8 @@ public class AdminMerchantListResponse {
     private LocalDateTime registrationDate;
     private Integer dishCount;
     private Integer orderCount;
+    private String openTime;
+    private String closeTime;
 
     // Cho hiển thị trong bảng
     public String getStatusBadge() {
