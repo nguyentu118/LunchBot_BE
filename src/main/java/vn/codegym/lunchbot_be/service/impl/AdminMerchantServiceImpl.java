@@ -23,6 +23,7 @@ import vn.codegym.lunchbot_be.service.EmailService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,6 +35,8 @@ public class AdminMerchantServiceImpl implements AdminMerchantService {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final EmailService emailService;
+
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     @Override
     public Page<AdminMerchantListResponse> getAllMerchants(Pageable pageable) {
@@ -172,6 +175,8 @@ public class AdminMerchantServiceImpl implements AdminMerchantService {
         response.setCurrentBalance(merchant.getCurrentBalance());
         response.setRegistrationDate(merchant.getRegistrationDate());
         response.setDishCount(merchant.getDishes().size());
+        response.setOpenTime(merchant.getOpenTime() != null ? merchant.getOpenTime().format(TIME_FORMATTER) : "N/A");
+        response.setCloseTime(merchant.getCloseTime() != null ? merchant.getCloseTime().format(TIME_FORMATTER) : "N/A");
 
         // Tính số đơn hàng
         Long orderCount = orderRepository.countByMerchantId(merchant.getId());
@@ -189,8 +194,8 @@ public class AdminMerchantServiceImpl implements AdminMerchantService {
         response.setEmail(merchant.getUser().getEmail());
         response.setPhone(merchant.getPhone());
         response.setAddress(merchant.getAddress());
-        response.setOpenTime(merchant.getOpenTime());
-        response.setCloseTime(merchant.getCloseTime());
+        response.setOpenTime(merchant.getOpenTime() != null ? merchant.getOpenTime().format(TIME_FORMATTER) : "N/A");
+        response.setCloseTime(merchant.getCloseTime() != null ? merchant.getCloseTime().format(TIME_FORMATTER) : "N/A");
         response.setRevenueTotal(merchant.getRevenueTotal());
         response.setCurrentBalance(merchant.getCurrentBalance());
         response.setStatus(merchant.getStatus());
@@ -202,6 +207,7 @@ public class AdminMerchantServiceImpl implements AdminMerchantService {
         response.setApprovalDate(merchant.getApprovalDate());
         response.setLockedAt(merchant.getLockedAt());
         response.setDishCount(merchant.getDishes().size());
+
 
         // Thống kê đơn hàng
         Long totalOrders = orderRepository.countByMerchantId(merchant.getId());

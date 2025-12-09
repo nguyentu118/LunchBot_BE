@@ -6,7 +6,6 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 
 @Data
@@ -17,8 +16,8 @@ public class AdminMerchantResponse {
     private String email;
     private String phone;
     private String address;
-    private LocalTime openTime;
-    private LocalTime closeTime;
+    private String openTime;
+    private String closeTime;
     private BigDecimal revenueTotal;
     private BigDecimal currentBalance;
     private MerchantStatus status;
