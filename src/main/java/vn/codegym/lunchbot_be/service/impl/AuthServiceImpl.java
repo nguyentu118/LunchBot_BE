@@ -2,13 +2,18 @@ package vn.codegym.lunchbot_be.service.impl;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import vn.codegym.lunchbot_be.dto.request.MerchantRegisterRequest;
 import vn.codegym.lunchbot_be.dto.response.AuthResponse;
 import vn.codegym.lunchbot_be.dto.request.LoginRequest;
 import vn.codegym.lunchbot_be.dto.request.RegistrationRequest;
+import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
 import vn.codegym.lunchbot_be.model.Merchant;
 import vn.codegym.lunchbot_be.model.User;
 import vn.codegym.lunchbot_be.model.enums.MerchantStatus;
@@ -32,6 +37,8 @@ public class AuthServiceImpl {
     private final EmailService emailService;
 
     private final JwtUtil jwtUtil;
+
+    private final AuthenticationManager authenticationManager;
 
     @Transactional
     public User registerMerchant(MerchantRegisterRequest request) {
@@ -78,29 +85,19 @@ public class AuthServiceImpl {
                     ? user.getFullName()
                     : user.getEmail();
 
-            // Khắc phục lỗi: Đảm bảo restaurantName KHÔNG NULL
+
             String merchantName = merchant.getRestaurantName() != null
                     ? merchant.getRestaurantName()
-                    : ""; // Sử dụng chuỗi rỗng nếu tên nhà hàng là null
+                    : "";
 
             emailService.sendRegistrationSuccessEmail(
                     user.getEmail(),
                     recipientName,
                     merchantName,
-                    "http://localhost:5173/register-merchant",
+                    "http://localhost:5173/login",
                     true
             );
-            String subject = "Đăng ký Merchant thành công!";
-            String body = String.format("Chào mừng bạn %s, bạn đã đăng ký thành công làm Merchant. Thông tin nhà hàng: %s",
-                    request.getEmail(), merchant.getRestaurantName());
-            emailService.sendRegistrationSuccessEmail(
-                    user.getEmail(),
-                    null,
-                    merchant.getRestaurantName(),
-                    "http://localhost:5173/register-merchant",
-                    true
 
-            ); // Thay URL đăng nhập thực tế
 
         } catch (Exception e) {
             // Xử lý lỗi gửi email (ví dụ: log lỗi)
@@ -149,7 +146,7 @@ public class AuthServiceImpl {
                     savedUser.getEmail(),
                     recipientName,
                     merchantName,  // <--- ĐÃ THAY NULL BẰNG CHUỖI RỖNG
-                    "http://localhost:5173/register",
+                    "http://localhost:5173/login",
                     false
             );
         } catch (Exception e) {
@@ -160,18 +157,26 @@ public class AuthServiceImpl {
     }
 
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BadCredentialsException("Email hoặc mật khẩu không đúng"));
 
-        // Kiểm tra password
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BadCredentialsException("Email hoặc mật khẩu không đúng");
-        }
+        // Bước này sẽ tự động gọi CustomUserDetailsService.loadUserByUsername()
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getEmail(),
+                        request.getPassword()
+                )
+        );
 
-        // Kiểm tra tài khoản có active không
-        if (!user.getIsActive()) {
-            throw new RuntimeException("Tài khoản đã bị vô hiệu hóa");
-        }
+        //Lưu thông tin vào Security Context (Tùy chọn, nhưng nên làm)
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        // Lấy UserDetails object đã được xác thực (là đối tượng User của bạn)
+        org.springframework.security.core.userdetails.User springUser =
+                (org.springframework.security.core.userdetails.User) authentication.getPrincipal();
+
+        // Lấy lại User object từ DB để lấy các thông tin khác (Merchant, Role...)
+        // Hoặc sử dụng method getUserByEmail của CustomUserDetailsService nếu bạn có
+        User user = userRepository.findByEmail(springUser.getUsername())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found after successful authentication"));
 
         // Tạo JWT token
         String token = jwtUtil.generateToken(
@@ -179,7 +184,7 @@ public class AuthServiceImpl {
                 user.getRole().name(),
                 user.getId()
         );
-
+        // Trả về Response
         return AuthResponse.builder()
                 .token(token)
                 .email(user.getEmail())
@@ -188,6 +193,5 @@ public class AuthServiceImpl {
                 .userId(user.getId())
                 .build();
     }
-
 
 }

@@ -45,7 +45,7 @@ public class EmailServiceImpl implements EmailService {
     @Value("${app.name:LunchBot}")
     private String appName;
 
-    @Value("${app.url:http://localhost:3000}")
+    @Value("${app.url:http://localhost:5173/login}")
     private String appUrl;
     // Lưu ý: @RequiredArgsConstructor sẽ tự động inject qua constructor
     // nhưng bạn vẫn có thể giữ @Autowired ở đây
