@@ -73,6 +73,17 @@ public class AdminMerchantController {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(adminMerchantService.searchMerchants(keyword, pageable));
     }
+    /**
+     * API đưa merchant bị từ chối quay lại trạng thái chờ duyệt - TASK 26 (Bổ sung)
+     */
+    @PutMapping("/{merchantId}/re-process")
+    public ResponseEntity<AdminMerchantResponse> reProcessMerchant(
+            @PathVariable("merchantId") Long merchantId,
+            @Valid @RequestBody MerchantApprovalRequest request) {
+
+        AdminMerchantResponse response = adminMerchantService.reProcessMerchant(merchantId, request);
+        return ResponseEntity.ok(response);
+    }
     //  BỔ SUNG: API LẤY CHI TIẾT MERCHANT - TASK 27
     @GetMapping("/{merchantId}")
     public ResponseEntity<AdminMerchantResponse> getMerchantDetails(

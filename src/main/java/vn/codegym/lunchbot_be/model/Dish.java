@@ -36,7 +36,7 @@ public class Dish {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(columnDefinition = "JSON")
+    @Column(name = "images_urls",columnDefinition = "JSON")
     private String imagesUrls; // JSON array of URLs
 
     @Column(nullable = false, precision = 10, scale = 2)

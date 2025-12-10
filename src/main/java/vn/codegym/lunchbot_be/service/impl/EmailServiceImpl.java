@@ -153,8 +153,6 @@ public class EmailServiceImpl implements EmailService {
 
         } catch (Exception e) {
             log.error("Failed to send merchant approval email to {}: {}", merchantEmail, e.getMessage(), e);
-            // Fallback to simple email
-            sendSimpleMerchantApprovalEmail(merchantEmail, merchantName, restaurantName, reason);
         }
     }
 
@@ -180,8 +178,6 @@ public class EmailServiceImpl implements EmailService {
 
         } catch (Exception e) {
             log.error("Failed to send merchant rejection email to {}: {}", merchantEmail, e.getMessage(), e);
-            // Fallback to simple email
-            sendSimpleMerchantRejectionEmail(merchantEmail, merchantName, restaurantName, reason);
         }
     }
 
@@ -206,8 +202,6 @@ public class EmailServiceImpl implements EmailService {
 
         } catch (Exception e) {
             log.error("Failed to send merchant locked email to {}: {}", merchantEmail, e.getMessage(), e);
-            // Fallback to simple email
-            sendSimpleMerchantLockedEmail(merchantEmail, merchantName, restaurantName, reason);
         }
     }
 
@@ -233,8 +227,6 @@ public class EmailServiceImpl implements EmailService {
 
         } catch (Exception e) {
             log.error("Failed to send merchant unlocked email to {}: {}", merchantEmail, e.getMessage(), e);
-            // Fallback to simple email
-            sendSimpleMerchantUnlockedEmail(merchantEmail, merchantName, restaurantName, reason);
         }
     }
 
@@ -342,21 +334,6 @@ public class EmailServiceImpl implements EmailService {
 
         mailSender.send(message);
     }
-    private void sendSimpleMerchantApprovalEmail(String merchantEmail, String merchantName, String restaurantName, String reason) {
-        String subject = "🎉 Chúc mừng! Tài khoản merchant của bạn đã được phê duyệt";
-        String content = String.format(
-                "Kính chào %s,\n\n" +
-                        "Chúc mừng! Tài khoản merchant cho nhà hàng \"%s\" của bạn đã được phê duyệt thành công.\n\n" +
-                        "Lý do: %s\n\n" +
-                        "Bạn có thể đăng nhập và bắt đầu quản lý nhà hàng của mình ngay bây giờ.\n\n" +
-                        "Trân trọng,\n" +
-                        "Đội ngũ %s\n" +
-                        "Email hỗ trợ: %s",
-                merchantName, restaurantName, reason, appName, supportEmail
-        );
-
-        sendSimpleEmail(merchantEmail, subject, content);
-    }
     private void sendSimpleEmail(String to, String subject, String text) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -369,51 +346,5 @@ public class EmailServiceImpl implements EmailService {
         } catch (MailException e) {
             log.error("Failed to send simple email to {}: {}", to, e.getMessage(), e);
         }
-    }
-    private void sendSimpleMerchantRejectionEmail(String merchantEmail, String merchantName, String restaurantName, String reason) {
-        String subject = "❌ Thông báo về việc xét duyệt tài khoản merchant";
-        String content = String.format(
-                "Kính chào %s,\n\n" +
-                        "Chúng tôi rất tiếc phải thông báo rằng tài khoản merchant cho nhà hàng \"%s\" của bạn chưa được phê duyệt.\n\n" +
-                        "Lý do: %s\n\n" +
-                        "Vui lòng kiểm tra và cập nhật thông tin theo yêu cầu, sau đó gửi lại đơn đăng ký.\n\n" +
-                        "Nếu có thắc mắc, vui lòng liên hệ với chúng tôi.\n\n" +
-                        "Trân trọng,\n" +
-                        "Đội ngũ %s\n" +
-                        "Email hỗ trợ: %s",
-                merchantName, restaurantName, reason, appName, supportEmail
-        );
-
-        sendSimpleEmail(merchantEmail, subject, content);
-    }
-    private void sendSimpleMerchantLockedEmail(String merchantEmail, String merchantName, String restaurantName, String reason) {
-        String subject = "🚫 Thông báo khóa tài khoản merchant";
-        String content = String.format(
-                "Kính chào %s,\n\n" +
-                        "Chúng tôi phải thông báo rằng tài khoản merchant cho nhà hàng \"%s\" của bạn đã bị khóa tạm thời.\n\n" +
-                        "Lý do: %s\n\n" +
-                        "Vui lòng liên hệ với đội ngũ hỗ trợ để được giải quyết vấn đề.\n\n" +
-                        "Trân trọng,\n" +
-                        "Đội ngũ %s\n" +
-                        "Email hỗ trợ: %s",
-                merchantName, restaurantName, reason, appName, supportEmail
-        );
-
-        sendSimpleEmail(merchantEmail, subject, content);
-    }
-    private void sendSimpleMerchantUnlockedEmail(String merchantEmail, String merchantName, String restaurantName, String reason) {
-        String subject = "✅ Thông báo mở khóa tài khoản merchant";
-        String content = String.format(
-                "Kính chào %s,\n\n" +
-                        "Chúng tôi vui mừng thông báo rằng tài khoản merchant cho nhà hàng \"%s\" của bạn đã được mở khóa.\n\n" +
-                        "Lý do: %s\n\n" +
-                        "Bạn có thể tiếp tục sử dụng dịch vụ như bình thường.\n\n" +
-                        "Trân trọng,\n" +
-                        "Đội ngũ %s\n" +
-                        "Email hỗ trợ: %s",
-                merchantName, restaurantName, reason, appName, supportEmail
-        );
-
-        sendSimpleEmail(merchantEmail, subject, content);
     }
 }

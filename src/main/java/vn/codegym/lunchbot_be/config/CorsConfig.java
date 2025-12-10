@@ -9,6 +9,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 
 @Configuration
+// Cache preflight response for 1 hour
 public class CorsConfig {
 
     @Bean

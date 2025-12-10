@@ -145,6 +145,33 @@ public class AdminMerchantServiceImpl implements AdminMerchantService {
     }
 
     @Override
+    @Transactional
+    public AdminMerchantResponse reProcessMerchant(Long merchantId, MerchantApprovalRequest request) {
+        Merchant merchant = merchantRepository.findById(merchantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Merchant not found with id: " + merchantId));
+
+        // Kiểm tra: Chỉ cho phép "Duyệt lại" nếu đang ở trạng thái REJECTED
+        if (merchant.getStatus() != MerchantStatus.REJECTED) {
+            throw new IllegalStateException("Chỉ có thể xét duyệt lại các merchant đang ở trạng thái bị từ chối.");
+        }
+
+        // Cập nhật trạng thái về PENDING
+        merchant.setStatus(MerchantStatus.PENDING);
+        merchant.setIsApproved(false);
+        // Có thể xóa lý do từ chối cũ hoặc ghi đè lý do xét duyệt lại
+        merchant.setRejectionReason("Xét duyệt lại: " + request.getReason());
+
+        merchantRepository.save(merchant);
+
+        log.info("Merchant {} has been moved back to PENDING for re-processing", merchantId);
+
+        // Thông báo email (Tùy chọn: Có thể gửi email báo cho Merchant biết họ đang được xem xét lại)
+        // emailService.sendMerchantReProcessingEmail(...);
+
+        return convertToAdminMerchantResponse(merchant);
+    }
+
+    @Override
     public Long countPendingMerchants() {
         return merchantRepository.countPendingMerchants();
     }
