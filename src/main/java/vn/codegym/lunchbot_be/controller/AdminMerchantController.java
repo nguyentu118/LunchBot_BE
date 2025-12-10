@@ -6,7 +6,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import vn.codegym.lunchbot_be.dto.request.MerchantApprovalRequest;
 import vn.codegym.lunchbot_be.dto.request.MerchantLockRequest;
@@ -14,7 +13,6 @@ import vn.codegym.lunchbot_be.dto.response.AdminMerchantListResponse;
 import vn.codegym.lunchbot_be.dto.response.AdminMerchantResponse;
 import vn.codegym.lunchbot_be.model.enums.MerchantStatus;
 import vn.codegym.lunchbot_be.service.AdminMerchantService;
-import vn.codegym.lunchbot_be.service.impl.UserDetailsImpl;
 
 @RestController
 @RequestMapping("/api/admin/merchants")
@@ -78,7 +76,6 @@ public class AdminMerchantController {
     //  BỔ SUNG: API LẤY CHI TIẾT MERCHANT - TASK 27
     @GetMapping("/{merchantId}")
     public ResponseEntity<AdminMerchantResponse> getMerchantDetails(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable("merchantId") Long merchantId) {
 
         AdminMerchantResponse response = adminMerchantService.getMerchantDetails(merchantId);
