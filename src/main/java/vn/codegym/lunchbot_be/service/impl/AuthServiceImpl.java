@@ -85,29 +85,19 @@ public class AuthServiceImpl {
                     ? user.getFullName()
                     : user.getEmail();
 
-            // Khắc phục lỗi: Đảm bảo restaurantName KHÔNG NULL
+
             String merchantName = merchant.getRestaurantName() != null
                     ? merchant.getRestaurantName()
-                    : ""; // Sử dụng chuỗi rỗng nếu tên nhà hàng là null
+                    : "";
 
             emailService.sendRegistrationSuccessEmail(
                     user.getEmail(),
                     recipientName,
                     merchantName,
-                    "http://localhost:5173/register-merchant",
+                    "http://localhost:5173/login",
                     true
             );
-            String subject = "Đăng ký Merchant thành công!";
-            String body = String.format("Chào mừng bạn %s, bạn đã đăng ký thành công làm Merchant. Thông tin nhà hàng: %s",
-                    request.getEmail(), merchant.getRestaurantName());
-            emailService.sendRegistrationSuccessEmail(
-                    user.getEmail(),
-                    null,
-                    merchant.getRestaurantName(),
-                    "http://localhost:5173/register-merchant",
-                    true
 
-            ); // Thay URL đăng nhập thực tế
 
         } catch (Exception e) {
             // Xử lý lỗi gửi email (ví dụ: log lỗi)
@@ -156,7 +146,7 @@ public class AuthServiceImpl {
                     savedUser.getEmail(),
                     recipientName,
                     merchantName,  // <--- ĐÃ THAY NULL BẰNG CHUỖI RỖNG
-                    "http://localhost:5173/register",
+                    "http://localhost:5173/login",
                     false
             );
         } catch (Exception e) {
@@ -205,6 +195,5 @@ public class AuthServiceImpl {
                 .userId(user.getId())
                 .build();
     }
-
 
 }

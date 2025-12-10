@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import vn.codegym.lunchbot_be.dto.request.MerchantUpdateRequest;
+import vn.codegym.lunchbot_be.dto.response.MerchantResponseDTO;
 import vn.codegym.lunchbot_be.exception.InvalidOperationException;
 import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
 import vn.codegym.lunchbot_be.model.Merchant;
@@ -55,6 +56,34 @@ public class MerchantServiceImpl {
 
         return merchantRepository.save(merchant);
 
+    }
+
+    public MerchantResponseDTO getMerchantProfileByEmail(String email) {
+        // 1. Tìm User và Merchant dựa trên email
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        Merchant merchant = user.getMerchant();
+        if (merchant == null) {
+            throw new ResourceNotFoundException("Merchant profile not found for this user");
+        }
+
+        MerchantResponseDTO response = new MerchantResponseDTO();
+
+        response.setEmail(user.getEmail());
+        response.setPhone(user.getPhone());
+
+        response.setRestaurantName(merchant.getRestaurantName());
+        response.setAddress(merchant.getAddress());
+
+        response.setOpenTime(
+                merchant.getOpenTime() != null ? merchant.getOpenTime().toString() : ""
+        );
+        response.setCloseTime(
+                merchant.getCloseTime() != null ? merchant.getCloseTime().toString() : ""
+        );
+
+        return response;
     }
 
 }

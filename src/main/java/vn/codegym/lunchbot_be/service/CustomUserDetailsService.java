@@ -1,14 +1,14 @@
 package vn.codegym.lunchbot_be.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.DisabledException; // Đảm bảo import
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import vn.codegym.lunchbot_be.model.User;
-import vn.codegym.lunchbot_be.model.enums.MerchantStatus; // Đảm bảo import
+import vn.codegym.lunchbot_be.model.enums.MerchantStatus;
 import vn.codegym.lunchbot_be.repository.UserRepository;
 
 import java.util.Collections;
@@ -24,39 +24,35 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy user với email: " + email));
 
-        // 2. 🔑 LOGIC CHẶN ĐĂNG NHẬP MERCHANT NẾU CHƯA ĐƯỢC DUYỆT (PENDING, REJECTED, LOCKED)
-        if (user.getMerchant() != null) {
-            MerchantStatus status = user.getMerchant().getStatus();
 
-            // ⭐ ĐIỀU KIỆN QUAN TRỌNG: Chỉ cho phép đăng nhập nếu trạng thái là APPROVED
-            if (status != MerchantStatus.APPROVED) {
+        // 2. 🔑 LOGIC CHẶN ĐĂNG NHẬP MERCHANT ĐÃ BỊ KHÓA (TASK 28)
+        if (user.getMerchant() != null) {
+            // Chỉ cho phép đăng nhập nếu trạng thái là APPROVED
+            if (user.getMerchant().getStatus() != MerchantStatus.APPROVED) {
                 String message;
-                switch (status) {
+                switch (user.getMerchant().getStatus()) {
                     case PENDING:
-                        message = "Tài khoản Merchant đang chờ duyệt. Vui lòng đợi quản trị viên phê duyệt.";
+                        message = "Tài khoản Merchant đang ở trạng thái Chờ duyệt. Vui lòng đợi quản trị viên phê duyệt.";
                         break;
                     case REJECTED:
-                        message = "Tài khoản Merchant đã bị từ chối. Vui lòng liên hệ quản trị viên.";
+                        message = "Tài khoản Merchant đã bị Từ chối. Vui lòng liên hệ quản trị viên.";
                         break;
                     case LOCKED:
-                        // Dù bạn có trường isLocked, việc kiểm tra Enum LOCKED vẫn là cách tốt nhất
-                        message = "Tài khoản Merchant đã bị khóa. Vui lòng liên hệ quản trị viên.";
+                        message = "Tài khoản Merchant đã bị Khóa. Vui lòng liên hệ quản trị viên.";
                         break;
                     default:
-                        message = "Tài khoản Merchant không ở trạng thái hoạt động.";
+                        message = "Tài khoản Merchant chưa được phê duyệt và không thể đăng nhập.";
                         break;
                 }
-
-                // ⭐ Đây là điểm chặn quá trình xác thực
+                // Ném ra DisabledException để Spring Security chặn quá trình xác thực
                 throw new DisabledException(message);
             }
         }
-        // 1. Kiểm tra trạng thái isActive (vô hiệu hóa chung)
+
         if (!user.getIsActive()) {
-            throw new DisabledException("Tài khoản đã bị vô hiệu hóa");
+            throw new RuntimeException("Tài khoản đã bị vô hiệu hóa");
         }
 
-        // Nếu tất cả kiểm tra đều qua, tạo UserDetails
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),
