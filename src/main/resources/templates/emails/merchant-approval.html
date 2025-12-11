@@ -6,10 +6,18 @@
   <style>
     body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #28a745; color: white; padding: 20px; text-align: center; }
+    .header {
+      /* Màu nền header đổi sang #F08080 */
+      background: #F08080;
+      color: white; padding: 20px; text-align: center;
+    }
     .content { padding: 20px; background: #f8f9fa; }
     .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
-    .button { background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }
+    .button {
+      /* Màu nền nút đổi sang #F08080 */
+      background: #F08080;
+      color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0;
+    }
   </style>
 </head>
 <body>
@@ -24,7 +32,9 @@
 
     <p>Chúc mừng! Tài khoản merchant cho nhà hàng <strong th:text="${restaurantName}">Restaurant Name</strong> của bạn đã được phê duyệt thành công.</p>
 
-    <div style="background: #d4edda; padding: 15px; border-left: 4px solid #28a745; margin: 20px 0;">
+    <div style="background: #fdf5f5; padding: 15px;
+         /* Màu đường viền lý do phê duyệt đổi sang #F08080 */
+         border-left: 4px solid #F08080; margin: 20px 0;">
       <strong>Lý do phê duyệt:</strong>
       <p th:text="${reason}">Approval reason</p>
     </div>
@@ -35,7 +45,7 @@
       <a th:href="${appUrl}" class="button">Đăng nhập ngay</a>
     </div>
 
-    <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email: <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}">support email</a></p>
+    <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email: <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}" style="color: #F08080;">support email</a></p>
   </div>
 
   <div class="footer">

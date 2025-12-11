@@ -28,7 +28,8 @@
             border-bottom: 1px solid #eeeeee;
         }
         .header h1 {
-            color: #3f51b5; /* Màu thương hiệu */
+            /* Thay đổi màu tiêu đề từ #3f51b5 sang #F08080 */
+            color: #F08080;
             margin: 0;
             font-size: 24px;
         }
@@ -42,7 +43,8 @@
             background-color: #f9f9f9;
             padding: 15px;
             border-radius: 6px;
-            border-left: 5px solid #4caf50;
+            /* Thay đổi màu đường viền từ #4caf50 sang #F08080 */
+            border-left: 5px solid #F08080;
             margin: 20px 0;
         }
         .details strong {
@@ -60,7 +62,8 @@
             display: inline-block;
             padding: 10px 20px;
             margin-top: 15px;
-            background-color: #4caf50;
+            /* Thay đổi màu nền nút từ #4caf50 sang #F08080 */
+            background-color: #F08080;
             color: #ffffff !important;
             text-decoration: none;
             border-radius: 5px;
@@ -71,7 +74,7 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1>🎉 Đăng Ký Thành Công!</h1>
+        <h1 style="color: #F08080;">🎉 Đăng Ký Thành Công!</h1>
     </div>
     <div class="content">
         <p>Xin chào ${fullName},</p>
@@ -88,7 +91,9 @@
         <p>Vui lòng click vào nút bên dưới để truy cập vào trang quản lý Merchant của bạn:</p>
 
         <p style="text-align: center;">
-            <a href="${loginUrl}" class="button-link">Xác nhận và đăng nhập</a>
+            <a th:href="${appUrl}" class="button-link">
+                Truy Cập Trang Quản Lý
+            </a>
         </p>
 
         <p>Cảm ơn bạn đã tham gia cộng đồng của chúng tôi!</p>

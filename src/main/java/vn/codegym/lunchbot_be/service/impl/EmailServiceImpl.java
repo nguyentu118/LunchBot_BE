@@ -53,10 +53,6 @@ public class EmailServiceImpl implements EmailService {
     private final ResourceLoader resourceLoader;
 
     private static final Logger LOGGER = Logger.getLogger(EmailServiceImpl.class.getName());
-
-    // ----------------------------------------------------------------------
-    // PHƯƠNG THỨC GỬI EMAIL HTML (SỬ DỤNG MIME MESSAGE)
-    // ----------------------------------------------------------------------
     @Async // Đảm bảo việc gửi email không làm chậm request API
     public void sendVerificationEmail(String to, String fullName, String token) {
         // Sử dụng templateEngine.process
@@ -72,7 +68,6 @@ public class EmailServiceImpl implements EmailService {
             context.setVariable("appName", appName); // Sử dụng biến appName nếu có
             context.setVariable("currentYear", String.valueOf(Year.now().getValue())); // Sử dụng biến Year
 
-            // Tên template: "emails/email-verification" (Bạn cần tạo file này)
             String htmlContent = templateEngine.process("emails/email-verification", context);
 
             sendHtmlEmail(to,
@@ -88,9 +83,6 @@ public class EmailServiceImpl implements EmailService {
     }
 
 
-    // =========================================================================
-    // PHƯƠNG THỨC HIỆN CÓ: GỬI EMAIL ĐĂNG KÝ THÀNH CÔNG (Giữ lại cho Merchant)
-    // =========================================================================
     @Async
     public void sendRegistrationSuccessEmail(String to, String fullName, String restaurantName, String loginUrl, boolean isMerchant) {
         MimeMessage mimeMessage = mailSender.createMimeMessage();

@@ -6,11 +6,26 @@
     <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #17a2b8; color: white; padding: 20px; text-align: center; }
+        .header {
+            /* Màu nền header đổi sang #F08080 */
+            background: #F08080;
+            color: white; padding: 20px; text-align: center;
+        }
         .content { padding: 20px; background: #f8f9fa; }
         .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
-        .button { background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }
-        .info-box { background: #d1ecf1; padding: 15px; border-left: 4px solid #17a2b8; margin: 20px 0; }
+        .button {
+            /* Màu nền nút Đăng nhập đổi sang #F08080 */
+            background: #F08080;
+            color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0;
+        }
+        .info-box {
+            /* Màu nền info box đổi nhạt hơn */
+            background: #fdf5f5;
+            padding: 15px;
+            /* Màu đường viền đổi sang #F08080 */
+            border-left: 4px solid #F08080;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
@@ -47,13 +62,15 @@
             <a th:href="${loginUrl}" class="button">Đăng nhập ngay</a>
         </div>
 
-        <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;">
+        <div style="background: #fdf5f5; padding: 15px; border-radius: 5px; margin: 20px 0;
+             /* Màu đường viền lưu ý đổi sang #F08080 */
+             border-left: 4px solid #F08080;">
             <strong>💡 Lưu ý quan trọng:</strong>
             <p style="margin: 5px 0 0 0;">Vui lòng tuân thủ các điều khoản và chính sách của nền tảng để tránh vi phạm trong tương lai.</p>
         </div>
 
         <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email:
-            <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}">support email</a>
+            <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}" style="color: #F08080;">support email</a>
         </p>
     </div>
 

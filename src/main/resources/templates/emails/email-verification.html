@@ -1,25 +1,43 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Xác Thực Tài Khoản LunchBot</title>
+    <title>Kích Hoạt Tài Khoản - Trưa nay ăn gì</title>
+    <meta charset="UTF-8">
 </head>
 <body>
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px;">
-    <h2>Xin chào, <span th:text="${fullName}">Tên người dùng</span>!</h2>
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px;">
 
-    <p>Cảm ơn bạn đã đăng ký tài khoản LunchBot. Vui lòng nhấp vào nút dưới đây để kích hoạt tài khoản của bạn:</p>
+    <h1 style="color: #F08080; text-align: center; border-bottom: 2px solid #F08080; padding-bottom: 10px;">
+        Trưa nay ăn gì
+    </h1>
 
-    <a th:href="${verificationLink}"
-       style="display: inline-block; padding: 10px 20px; margin: 15px 0; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">
-        Kích Hoạt Tài Khoản Của Tôi
-    </a>
+    <h2 style="color: #333; font-weight: normal;">
+        Xin chào, <span th:text="${fullName}">bạn</span>!
+    </h2>
 
-<!--    <p>Nếu bạn không thể nhấp vào nút, vui lòng sao chép và dán liên kết sau vào trình duyệt của bạn:</p>-->
-<!--    <p><a th:href="${verificationLink}" th:text="${verificationLink}">[Link Kích Hoạt]</a></p>-->
+    <p style="font-size: 16px; line-height: 1.5; color: #555;">
+        Bạn đã đăng ký tài khoản thành công.
+        Vui lòng nhấn vào
+        <a th:href="${verificationLink}"
+           style="color: #F08080; text-decoration: none; font-weight: bold;">
+            đây
+        </a>
+        để kích hoạt tài khoản sử dụng.
+    </p>
 
-    <p>Trân trọng,<br>Đội ngũ LunchBot</p>
 
-    <p style="font-size: 10px; color: #999;">&copy; <span th:text="${currentYear}">2025</span> LunchBot. Tất cả quyền được bảo lưu.</p>
+    <p style="font-size: 14px; color: #333; margin-top: 30px;">
+        Trân trọng,<br>
+        Đội ngũ "LunchBot - Trưa nay ăn gì"
+    </p>
+
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+    <p style="font-size: 10px; color: #999; text-align: center;">
+        &copy; <span th:text="${currentYear}">2025</span> Trưa nay ăn gì.
+        <br>
+        Nếu bạn không đăng ký tài khoản này, vui lòng bỏ qua email này.
+    </p>
 </div>
 </body>
 </html>
