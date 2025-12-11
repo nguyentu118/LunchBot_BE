@@ -14,14 +14,29 @@ import vn.codegym.lunchbot_be.repository.MerchantRepository;
 import vn.codegym.lunchbot_be.service.impl.MerchantServiceImpl;
 import vn.codegym.lunchbot_be.service.impl.UserDetailsImpl;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/merchants")
 @RequiredArgsConstructor
 public class MerchantController {
 
-    private final MerchantRepository merchantRepository;
-
     private final MerchantServiceImpl merchantService;
+
+    @GetMapping("/current/id")
+    public ResponseEntity<?> getCurrentMerchantId(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+        try {
+            // Lấy trực tiếp từ UserDetails thay vì Authentication
+            Long userId = userDetails.getId();
+            Long merchantId = merchantService.getMerchantIdByUserId(userId);
+
+            return ResponseEntity.ok(Map.of("merchantId", merchantId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Lỗi hệ thống khi lấy Merchant ID.");
+        }
+    }
 
     @GetMapping("/profile")
     // Authentication object được inject tự động bởi Spring Security

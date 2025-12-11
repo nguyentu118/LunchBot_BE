@@ -1,5 +1,6 @@
 package vn.codegym.lunchbot_be.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
@@ -14,12 +15,14 @@ import java.util.List;
 
 @Entity
 @Table(name = "merchants")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @ToString(exclude = {"user", "dishes", "orders", "coupons", "transactions",
         "withdrawalRequests", "revenueClaims"})
+@EqualsAndHashCode(exclude = {"user", "dishes", "orders", "coupons", "transactions", "withdrawalRequests", "revenueClaims"})
 public class Merchant {
 
     @Id
@@ -28,6 +31,7 @@ public class Merchant {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @JsonIgnore
     private User user;
 
     private String restaurantName;
@@ -80,6 +84,7 @@ public class Merchant {
 
     // Relationships
     @OneToMany(mappedBy = "merchant", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Dish> dishes = new ArrayList<>();
 
     @OneToMany(mappedBy = "merchant")

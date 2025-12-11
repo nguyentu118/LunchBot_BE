@@ -3,6 +3,7 @@ package vn.codegym.lunchbot_be.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -64,8 +65,10 @@ public class SecurityConfig {
                 // 4. Authorization rules
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/**", "/public/**").permitAll()
-                        .requestMatchers("/api/admin/**").permitAll()
-                        .requestMatchers("/api/merchants/**").hasRole("MERCHANT")
+                        .requestMatchers("/api/merchants/current/id").authenticated()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/merchants/**", "api/dishes/**").hasRole("MERCHANT")
+                        .requestMatchers("/api/categories/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .httpBasic(AbstractHttpConfigurer::disable)
