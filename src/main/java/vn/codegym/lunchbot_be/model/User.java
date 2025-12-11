@@ -16,11 +16,13 @@ import java.util.List;
 @Entity
 @Table(name = "users",
         uniqueConstraints = @UniqueConstraint(columnNames = "email"))
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @ToString(exclude = {"password", "addresses", "orders", "favorites", "notifications"})
+@EqualsAndHashCode(exclude = {"addresses", "orders", "favorites", "notifications", "cart", "merchant"})
 public class User {
 
     @Id

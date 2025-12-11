@@ -15,6 +15,10 @@ import java.util.Optional;
 @Repository
 public interface MerchantRepository extends JpaRepository<Merchant, Long> {
     Optional<Merchant> findByUserId(Long userId);
+
+    @Query("SELECT m FROM Merchant m JOIN m.user u WHERE u.email = :username")
+    Optional<Merchant> findByUsername(@Param("username") String username);
+
     Optional<Merchant> findByPhone(String phone);
 
     @Query("SELECT m FROM Merchant m WHERE m.restaurantName LIKE %:keyword%")
@@ -22,6 +26,7 @@ public interface MerchantRepository extends JpaRepository<Merchant, Long> {
 
     @Query("SELECT m FROM Merchant m WHERE m.isPartner = :isPartner")
     List<Merchant> findByPartnerStatus(@Param("isPartner") boolean isPartner);
+
     Page<Merchant> findByStatus(MerchantStatus status, Pageable pageable);
 
     @Query("SELECT m FROM Merchant m WHERE " +

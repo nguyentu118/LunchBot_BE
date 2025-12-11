@@ -1,5 +1,6 @@
 package vn.codegym.lunchbot_be.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
@@ -15,11 +16,13 @@ import java.util.Set;
 
 @Entity
 @Table(name = "dishes")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @ToString(exclude = {"merchant", "categories", "orderItems", "cartItems", "favorites"})
+@EqualsAndHashCode(exclude = {"merchant", "categories", "orderItems", "cartItems", "favorites"})
 public class Dish {
 
     @Id
@@ -28,6 +31,7 @@ public class Dish {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "merchant_id", nullable = false)
+    @JsonIgnoreProperties({"dishes", "handler", "hibernateLazyInitializer"})
     private Merchant merchant;
 
     @Column(nullable = false)

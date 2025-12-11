@@ -7,14 +7,12 @@
     body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
     .header {
-      /* Màu nền header đổi sang #F08080 */
       background: #F08080;
       color: white; padding: 20px; text-align: center;
     }
     .content { padding: 20px; background: #f8f9fa; }
     .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
     .button {
-      /* Màu nền nút đổi sang #F08080 */
       background: #F08080;
       color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0;
     }
@@ -42,7 +40,7 @@
     <p>Bạn có thể đăng nhập và bắt đầu quản lý nhà hàng của mình ngay bây giờ:</p>
 
     <div style="text-align: center; margin: 30px 0;">
-      <a th:href="${appUrl}" class="button">Đăng nhập ngay</a>
+      <a th:href="${appUrl}" class="button text-black">Đăng nhập ngay</a>
     </div>
 
     <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email: <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}" style="color: #F08080;">support email</a></p>

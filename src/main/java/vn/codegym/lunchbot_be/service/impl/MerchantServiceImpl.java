@@ -23,6 +23,12 @@ public class MerchantServiceImpl {
 
     private final MerchantRepository merchantRepository;
 
+    public Long getMerchantIdByUserId(Long userId) {
+        Merchant merchant = merchantRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Merchant với User ID: " + userId));
+        return merchant.getId();
+    }
+
     @Transactional
     public Merchant updateMerchanntInfo(Long userId, MerchantUpdateRequest request) {
 
@@ -68,6 +74,12 @@ public class MerchantServiceImpl {
             throw new ResourceNotFoundException("Merchant profile not found for this user");
         }
 
+        MerchantResponseDTO response = getMerchantResponseDTO(user, merchant);
+
+        return response;
+    }
+
+    private static MerchantResponseDTO getMerchantResponseDTO(User user, Merchant merchant) {
         MerchantResponseDTO response = new MerchantResponseDTO();
 
         response.setEmail(user.getEmail());
@@ -82,7 +94,6 @@ public class MerchantServiceImpl {
         response.setCloseTime(
                 merchant.getCloseTime() != null ? merchant.getCloseTime().toString() : ""
         );
-
         return response;
     }
 
