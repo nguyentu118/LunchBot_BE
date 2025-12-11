@@ -75,4 +75,69 @@ public class DishServiceImpl implements DishService {
         // Hoặc List<Dish> findAllByMerchantId(Long merchantId);
         return dishRepository.findByMerchantId(merchant.getId());
     }
+
+    @Override
+    public Dish findDishById(Long dishId) {
+        return dishRepository.findById(dishId)
+                .orElseThrow(() -> new RuntimeException("Món ăn không tồn tại với ID: " + dishId));
+    }
+
+    @Override
+    @Transactional
+    public Dish updateDish(Long dishId, DishCreateRequest request, String username) {
+        // 1. TÌM MERCHANT AN TOÀN
+        Merchant merchant = merchantRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Merchant không tồn tại với tài khoản này."));
+
+        // 2. TÌM MÓN ĂN CẦN CẬP NHẬT
+        Dish existingDish = dishRepository.findById(dishId)
+                .orElseThrow(() -> new RuntimeException("Món ăn không tồn tại với ID: " + dishId));
+
+        // 3. KIỂM TRA QUYỀN
+        if (!existingDish.getMerchant().getId().equals(merchant.getId())) {
+            throw new RuntimeException("Bạn không có quyền cập nhật món ăn này.");
+        }
+
+        // 4. Tìm Categories/Tags mới
+        Set<Category> categories = new HashSet<>(categoryRepository.findAllById(request.getCategoryIds()));
+
+        if (categories.size() != request.getCategoryIds().size()) {
+            throw new RuntimeException("Một hoặc nhiều Tag/Category không tồn tại.");
+        }
+
+        // 5. CẬP NHẬT THÔNG TIN
+        existingDish.setName(request.getName());
+        existingDish.setDescription(request.getDescription());
+        existingDish.setImagesUrls(request.getImagesUrls());
+        existingDish.setPrice(request.getPrice());
+        existingDish.setDiscountPrice(request.getDiscountPrice());
+        existingDish.setServiceFee(request.getServiceFee() != null ? request.getServiceFee() : BigDecimal.ZERO);
+        existingDish.setPreparationTime(request.getPreparationTime());
+        existingDish.setIsRecommended(request.getIsRecommended());
+        existingDish.setCategories(categories);
+
+        // 6. Lưu vào Database
+        return dishRepository.save(existingDish);
+    }
+
+    // --- DELETE ---
+    @Override
+    @Transactional
+    public void deleteDish(Long dishId, String username) {
+        // 1. TÌM MERCHANT AN TOÀN
+        Merchant merchant = merchantRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Merchant không tồn tại với tài khoản này."));
+
+        // 2. TÌM MÓN ĂN CẦN XÓA
+        Dish existingDish = dishRepository.findById(dishId)
+                .orElseThrow(() -> new RuntimeException("Món ăn không tồn tại với ID: " + dishId));
+
+        // 3. KIỂM TRA QUYỀN
+        if (!existingDish.getMerchant().getId().equals(merchant.getId())) {
+            throw new RuntimeException("Bạn không có quyền xóa món ăn này.");
+        }
+
+        // 4. THỰC HIỆN XÓA
+        dishRepository.delete(existingDish);
+    }
 }

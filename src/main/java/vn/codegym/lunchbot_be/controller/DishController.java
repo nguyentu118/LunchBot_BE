@@ -70,4 +70,57 @@ public class DishController {
             return new ResponseEntity<>("Lỗi hệ thống khi tải danh sách món ăn.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @GetMapping("/{dishId}")
+    public ResponseEntity<?> getDishDetail(@PathVariable Long dishId) {
+        try {
+            Dish dish = dishService.findDishById(dishId);
+
+            // Trả về DTO đầy đủ để FE dùng cho form chỉnh sửa
+            DishResponse response = DishResponse.fromEntity(dish);
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>("Không tìm thấy món ăn: " + e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Lỗi hệ thống khi tải chi tiết món ăn.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PutMapping("/{dishId}")
+    public ResponseEntity<?> updateDish(@PathVariable Long dishId,
+                                        @Valid @RequestBody DishCreateRequest request,
+                                        Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            Dish updatedDish = dishService.updateDish(dishId, request, username);
+
+            DishResponse response = DishResponse.fromEntity(updatedDish);
+
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>("Cập nhật món ăn thất bại: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Cập nhật món ăn thất bại do lỗi hệ thống.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // --- DELETE (DELETE /api/dishes/{dishId}) ---
+    @DeleteMapping("/{dishId}")
+    public ResponseEntity<?> deleteDish(@PathVariable Long dishId, Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            dishService.deleteDish(dishId, username);
+
+            // Trả về 200 OK với thông báo thành công
+            return new ResponseEntity<>("Món ăn đã được xóa thành công.", HttpStatus.OK);
+
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>("Xóa món ăn thất bại: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Xóa món ăn thất bại do lỗi hệ thống.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

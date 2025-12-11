@@ -12,9 +12,6 @@ public class DishCreateRequest {
     @Size(max = 255, message = "Tên món ăn không được quá 255 ký tự")
     private String name;
 
-    @NotNull(message = "ID Merchant không được để trống")
-    private Long merchantId;
-
     private String imagesUrls;
 
     @PositiveOrZero(message = "Thời gian chuẩn bị phải lớn hơn hoặc bằng 0")
