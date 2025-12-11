@@ -55,12 +55,6 @@ public class User {
     @Column(nullable = false)
     private Boolean isEmailVerified = false;
 
-    @Column(name = "confirmation_token") // ⭐ THÊM TRƯỜNG TOKEN
-    private String confirmationToken;
-
-    @Column(name = "token_expiry_date") // ⭐ THÊM TRƯỜNG THỜI GIAN HẾT HẠN
-    private LocalDateTime tokenExpiryDate;
-
     @CreationTimestamp
     private LocalDateTime createdAt;
 

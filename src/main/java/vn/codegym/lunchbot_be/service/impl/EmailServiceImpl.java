@@ -385,27 +385,4 @@ public class EmailServiceImpl implements EmailService {
             log.error("Failed to send simple email to {}: {}", to, e.getMessage(), e);
         }
     }
-    @Async
-    public void sendRegistrationConfirmationEmail(String toEmail, String recipientName, String token) {
-        // ⭐ Cần thay đổi base URL này khi deploy
-        // Ví dụ: http://yourdomain.com/api/auth/confirm-registration?token=...
-        String confirmationUrl = "http://localhost:8080/api/auth/confirm-registration?token=" + token;
-
-        String subject = "Xác nhận đăng ký tài khoản LunchBot";
-
-        String content = "Xin chào " + recipientName + ",\n\n"
-                + "Cảm ơn bạn đã đăng ký tài khoản tại LunchBot. Vui lòng nhấp vào liên kết dưới đây để kích hoạt tài khoản của bạn để xác nhận đăng ký:\n\n"
-                + confirmationUrl + "\n\n"
-                + "Liên kết này sẽ hết hạn sau 24 giờ.\n\n"
-                + "Trân trọng,\n"
-                + "Đội ngũ LunchBot";
-
-        try {
-            // Sử dụng phương thức gửi email đơn giản hiện có
-            sendSimpleEmail(toEmail, subject, content);
-            log.info("Confirmation email sent successfully to: {}", toEmail);
-        } catch (Exception e) {
-            log.error("Failed to send confirmation email to {}: {}", toEmail, e.getMessage());
-        }
-    }
 }

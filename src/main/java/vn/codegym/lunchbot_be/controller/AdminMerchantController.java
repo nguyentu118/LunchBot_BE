@@ -21,9 +21,8 @@ public class AdminMerchantController {
 
     private final AdminMerchantService adminMerchantService;
 
-    /**
-     * API duyệt/từ chối merchant - TASK 25
-     */
+
+     //API duyệt/từ chối merchant - TASK 25
     @PutMapping("/{merchantId}/approval")
     public ResponseEntity<AdminMerchantResponse> approveMerchant(
             @PathVariable("merchantId") Long merchantId,

@@ -23,4 +23,9 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     @Modifying
     @Query("DELETE FROM CartItem ci WHERE ci.cart.id = :cartId AND ci.dish.id = :dishId")
     void deleteByCartIdAndDishId(@Param("cartId") Long cartId, @Param("dishId") Long dishId);
+
+    // Tính tổng số lượng món ăn (quantity) trong giỏ hàng cụ thể
+    @Query("SELECT COALESCE(SUM(ci.quantity), 0L) FROM CartItem ci WHERE ci.cart.id = :cartId")
+    Long countTotalItemsByCartId(@Param("cartId") Long cartId);
 }
+

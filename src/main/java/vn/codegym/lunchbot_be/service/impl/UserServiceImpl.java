@@ -5,6 +5,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.codegym.lunchbot_be.dto.request.UserUpdateDTO;
+import vn.codegym.lunchbot_be.dto.response.UserMeResponse;
 import vn.codegym.lunchbot_be.dto.response.UserResponseDTO;
 import vn.codegym.lunchbot_be.model.Address;
 import vn.codegym.lunchbot_be.model.User;
@@ -114,5 +115,16 @@ public class UserServiceImpl {
         dto.setShippingAddress(defaultAddress);
 
         return dto;
+    }
+    // Thêm phương thức mới để chỉ lấy thông tin cần cho Header
+    public UserMeResponse getHeaderUserInfo(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+
+        // 2. Map sang DTO
+        return UserMeResponse.builder()
+                .fullName(user.getFullName()) // Lấy tên hiển thị từ Entity
+                .isLoggedIn(true)
+                .build();
     }
 }
