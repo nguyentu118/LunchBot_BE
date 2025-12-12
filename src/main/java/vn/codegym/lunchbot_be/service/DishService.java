@@ -1,6 +1,7 @@
 package vn.codegym.lunchbot_be.service;
 
 import vn.codegym.lunchbot_be.dto.request.DishCreateRequest;
+import vn.codegym.lunchbot_be.dto.response.SuggestedDishResponse;
 import vn.codegym.lunchbot_be.model.Dish;
 
 import java.util.List;
@@ -20,4 +21,6 @@ public interface DishService {
 
     // DELETE
     void deleteDish(Long dishId, String username);
+
+    List<SuggestedDishResponse> getTopSuggestedDishes();
 }

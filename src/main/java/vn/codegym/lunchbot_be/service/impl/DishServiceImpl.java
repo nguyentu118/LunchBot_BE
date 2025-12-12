@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.codegym.lunchbot_be.dto.request.DishCreateRequest;
+import vn.codegym.lunchbot_be.dto.response.SuggestedDishResponse;
 import vn.codegym.lunchbot_be.model.Category;
 import vn.codegym.lunchbot_be.model.Dish;
 import vn.codegym.lunchbot_be.model.Merchant;
@@ -16,6 +17,7 @@ import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -139,5 +141,15 @@ public class DishServiceImpl implements DishService {
 
         // 4. THỰC HIỆN XÓA
         dishRepository.delete(existingDish);
+    }
+
+    @Override
+    public List<SuggestedDishResponse> getTopSuggestedDishes() {
+        List<Dish> suggestedDishes = dishRepository.findTop8SuggestedDishes();
+
+        // 2. Ánh xạ từ List<Dish> sang List<SuggestedDishResponse> (DTO)
+        return suggestedDishes.stream()
+                .map(SuggestedDishResponse::fromEntity) // Dùng hàm static builder trong DTO
+                .collect(Collectors.toList());
     }
 }

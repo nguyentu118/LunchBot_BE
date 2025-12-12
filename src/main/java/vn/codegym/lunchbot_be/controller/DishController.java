@@ -8,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import vn.codegym.lunchbot_be.dto.request.DishCreateRequest;
 import vn.codegym.lunchbot_be.dto.response.DishResponse;
+import vn.codegym.lunchbot_be.dto.response.SuggestedDishResponse;
 import vn.codegym.lunchbot_be.model.Dish;
 import vn.codegym.lunchbot_be.service.DishService;
 
@@ -121,6 +122,21 @@ public class DishController {
             return new ResponseEntity<>("Xóa món ăn thất bại: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             return new ResponseEntity<>("Xóa món ăn thất bại do lỗi hệ thống.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    @GetMapping("/suggested")
+    public ResponseEntity<?> getSuggestedDishes() {
+        try {
+            // 1. Lấy danh sách món ăn gợi ý từ Service
+            List<SuggestedDishResponse> suggestedDishes = dishService.getTopSuggestedDishes();
+
+            // 2. Trả về kết quả
+            return ResponseEntity.ok(suggestedDishes);
+
+        } catch (Exception e) {
+            // Log lỗi chi tiết nếu cần
+            System.err.println("Lỗi khi tải danh sách món ăn gợi ý: " + e.getMessage());
+            return new ResponseEntity<>("Lỗi hệ thống khi tải danh sách món ăn gợi ý.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
