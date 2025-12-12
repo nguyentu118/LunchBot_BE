@@ -65,7 +65,7 @@ public class SecurityConfig {
                 // 4. Authorization rules
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/**", "/public/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/dishes/suggested").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/dishes/**").permitAll()
                         .requestMatchers("/api/merchants/current/id").authenticated()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/merchants/**", "api/dishes/**").hasRole("MERCHANT")

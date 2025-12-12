@@ -28,11 +28,7 @@ public class MerchantResponseDTO {
                 .id(merchant.getId())
                 .restaurantName(merchant.getRestaurantName()) // Giả định Merchant.name = restaurantName
                 .address(merchant.getAddress())
-                // Lưu ý: Cần đảm bảo Merchant Entity có các trường sau:
-                // .email(merchant.getEmail())
                 .phone(merchant.getPhone())
-                // .openTime(merchant.getOpenTime())
-                // .closeTime(merchant.getCloseTime())
                 .build();
     }
 }

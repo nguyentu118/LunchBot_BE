@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import vn.codegym.lunchbot_be.dto.request.DishCreateRequest;
+import vn.codegym.lunchbot_be.dto.response.DishDetailResponse;
 import vn.codegym.lunchbot_be.dto.response.DishResponse;
 import vn.codegym.lunchbot_be.dto.response.SuggestedDishResponse;
 import vn.codegym.lunchbot_be.model.Dish;
@@ -76,12 +77,8 @@ public class DishController {
     public ResponseEntity<?> getDishDetail(@PathVariable Long dishId) {
         try {
             Dish dish = dishService.findDishById(dishId);
-
-            // Trả về DTO đầy đủ để FE dùng cho form chỉnh sửa
             DishResponse response = DishResponse.fromEntity(dish);
-
             return ResponseEntity.ok(response);
-
         } catch (RuntimeException e) {
             return new ResponseEntity<>("Không tìm thấy món ăn: " + e.getMessage(), HttpStatus.NOT_FOUND);
         } catch (Exception e) {
