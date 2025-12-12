@@ -21,6 +21,9 @@ public interface DishRepository extends JpaRepository<Dish, Long> {
 
     List<Dish> findByMerchantId(Long merchantId);
 
+    @Query(value = "SELECT d FROM Dish d WHERE d.isRecommended = true AND d.isActive = true ORDER BY d.orderCount DESC LIMIT 8")
+    List<Dish> findTop8SuggestedDishes();
+
     Page<Dish> findByMerchantId(Long merchantId, Pageable pageable);
 
     @Query("SELECT d FROM Dish d " +

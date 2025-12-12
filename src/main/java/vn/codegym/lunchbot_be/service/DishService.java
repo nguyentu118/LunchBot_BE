@@ -2,6 +2,7 @@ package vn.codegym.lunchbot_be.service;
 
 import vn.codegym.lunchbot_be.dto.request.DishCreateRequest;
 import vn.codegym.lunchbot_be.dto.response.DishDetailResponse;
+import vn.codegym.lunchbot_be.dto.response.SuggestedDishResponse;
 import vn.codegym.lunchbot_be.model.Dish;
 
 import java.util.List;
@@ -19,4 +20,5 @@ public interface DishService {
 
     DishDetailResponse getDishDetail(Long dishId);
 
+    List<SuggestedDishResponse> getTopSuggestedDishes();
 }

@@ -8,6 +8,7 @@ import vn.codegym.lunchbot_be.dto.response.DishDetailResponse;
 import vn.codegym.lunchbot_be.dto.response.DishImageDTO;
 import vn.codegym.lunchbot_be.dto.response.DishSimpleResponse;
 import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
+import vn.codegym.lunchbot_be.dto.response.SuggestedDishResponse;
 import vn.codegym.lunchbot_be.model.Category;
 import vn.codegym.lunchbot_be.model.Dish;
 import vn.codegym.lunchbot_be.model.Merchant;
@@ -186,5 +187,12 @@ public class DishServiceImpl implements DishService {
                 .merchantId(dish.getMerchant().getId())
                 .merchantName(dish.getMerchant().getRestaurantName())
                 .build();
+    public List<SuggestedDishResponse> getTopSuggestedDishes() {
+        List<Dish> suggestedDishes = dishRepository.findTop8SuggestedDishes();
+
+        // 2. Ánh xạ từ List<Dish> sang List<SuggestedDishResponse> (DTO)
+        return suggestedDishes.stream()
+                .map(SuggestedDishResponse::fromEntity) // Dùng hàm static builder trong DTO
+                .collect(Collectors.toList());
     }
 }
