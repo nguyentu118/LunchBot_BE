@@ -37,6 +37,9 @@ public class Dish {
     @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false)
+    private String address;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 
@@ -74,6 +77,10 @@ public class Dish {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "dish", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("displayOrder ASC")
+    private List<DishImage> images = new ArrayList<>();
 
     // Many-to-Many with Category
     @ManyToMany

@@ -1,16 +1,21 @@
 package vn.codegym.lunchbot_be.dto.request;
 
 import jakarta.validation.constraints.*;
+import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
 import java.util.Set;
 
 @Data
+@Builder
 public class DishCreateRequest {
     @NotBlank(message = "Tên món ăn không được để trống")
     @Size(max = 255, message = "Tên món ăn không được quá 255 ký tự")
     private String name;
+
+    @NotBlank(message = "Địa chỉ không được để trống")
+    private String address;
 
     private String imagesUrls;
 

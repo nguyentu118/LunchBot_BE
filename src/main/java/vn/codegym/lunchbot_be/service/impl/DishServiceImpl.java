@@ -4,6 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.codegym.lunchbot_be.dto.request.DishCreateRequest;
+import vn.codegym.lunchbot_be.dto.response.DishDetailResponse;
+import vn.codegym.lunchbot_be.dto.response.DishImageDTO;
+import vn.codegym.lunchbot_be.dto.response.DishSimpleResponse;
+import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
 import vn.codegym.lunchbot_be.model.Category;
 import vn.codegym.lunchbot_be.model.Dish;
 import vn.codegym.lunchbot_be.model.Merchant;
@@ -13,9 +17,11 @@ import vn.codegym.lunchbot_be.repository.MerchantRepository;
 import vn.codegym.lunchbot_be.service.DishService;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +53,7 @@ public class DishServiceImpl implements DishService {
         Dish newDish = Dish.builder()
                 .merchant(merchant)
                 .name(request.getName())
+                .address(request.getAddress())
                 .description(request.getDescription())
                 .imagesUrls(request.getImagesUrls())
                 .price(request.getPrice())
@@ -107,6 +114,7 @@ public class DishServiceImpl implements DishService {
 
         // 5. CẬP NHẬT THÔNG TIN
         existingDish.setName(request.getName());
+        existingDish.setAddress(request.getAddress());
         existingDish.setDescription(request.getDescription());
         existingDish.setImagesUrls(request.getImagesUrls());
         existingDish.setPrice(request.getPrice());
@@ -120,7 +128,6 @@ public class DishServiceImpl implements DishService {
         return dishRepository.save(existingDish);
     }
 
-    // --- DELETE ---
     @Override
     @Transactional
     public void deleteDish(Long dishId, String username) {
@@ -139,5 +146,45 @@ public class DishServiceImpl implements DishService {
 
         // 4. THỰC HIỆN XÓA
         dishRepository.delete(existingDish);
+    }
+
+    @Override
+    @Transactional
+    public DishDetailResponse getDishDetail(Long dishId) {
+        Dish dish = dishRepository.findById(dishId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy món ăn với ID: " + dishId));
+
+        if (!dish.getIsActive()) {
+            throw new ResourceNotFoundException("Món ăn không còn khả dụng");
+        }
+
+        // Tăng view count
+        dish.incrementViewCount();
+        dishRepository.save(dish);
+
+        return mapToDishDetailResponse(dish);
+    }
+
+    private DishDetailResponse mapToDishDetailResponse(Dish dish) {
+        return DishDetailResponse.builder()
+                .id(dish.getId())
+                .name(dish.getName())
+                .description(dish.getDescription())
+                .price(dish.getPrice())
+                .discountPrice(dish.getDiscountPrice())
+                .preparationTime(dish.getPreparationTime())
+                .viewCount(dish.getViewCount())
+                .images(dish.getImages().stream()
+                        .map(image -> DishImageDTO.builder()
+                                .id(image.getId())
+                                .imageUrl(image.getImageUrl())
+                                .publicId(image.getPublicId())
+                                .displayOrder(image.getDisplayOrder())
+                                .isPrimary(image.getIsPrimary())
+                                .build())
+                        .collect(Collectors.toList()))
+                .merchantId(dish.getMerchant().getId())
+                .merchantName(dish.getMerchant().getRestaurantName())
+                .build();
     }
 }

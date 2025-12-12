@@ -2,6 +2,7 @@ package vn.codegym.lunchbot_be.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,12 +11,23 @@ import vn.codegym.lunchbot_be.model.Dish;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DishRepository extends JpaRepository<Dish, Long> {
+
+    @EntityGraph(attributePaths = {"images"})
+    Optional<Dish> findById(Long id);
+
     List<Dish> findByMerchantId(Long merchantId);
 
     Page<Dish> findByMerchantId(Long merchantId, Pageable pageable);
+
+    @Query("SELECT d FROM Dish d " +
+            "LEFT JOIN FETCH d.merchant m " +
+            "LEFT JOIN FETCH d.images i " +
+            "WHERE d.id = :dishId")
+    Optional<Dish> findByIdWithDetails(@Param("dishId") Long dishId);
 
     @Query("SELECT d FROM Dish d WHERE d.isRecommended = true AND d.isActive = true")
     List<Dish> findRecommendedDishes();
