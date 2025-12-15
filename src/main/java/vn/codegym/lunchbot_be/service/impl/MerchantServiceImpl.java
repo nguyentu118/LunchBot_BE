@@ -2,6 +2,8 @@ package vn.codegym.lunchbot_be.service.impl;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import vn.codegym.lunchbot_be.dto.request.MerchantUpdateRequest;
 import vn.codegym.lunchbot_be.dto.response.MerchantResponseDTO;
@@ -97,4 +99,29 @@ public class MerchantServiceImpl {
         return response;
     }
 
+    public Long getCurrentMerchantId() {
+        // 1. Lấy Email từ SecurityContext
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Người dùng chưa đăng nhập");
+        }
+
+        String email;
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof UserDetails) {
+            email = ((UserDetails) principal).getUsername();
+        } else {
+            email = principal.toString();
+        }
+
+        // 2. Tìm User từ Email để lấy ID
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy User với email: " + email));
+
+        // 3. ✅ Gọi method findByUserId như bạn muốn
+        Merchant merchant = merchantRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new RuntimeException("Tài khoản này chưa đăng ký thông tin Cửa hàng (Merchant)"));
+
+        return merchant.getId();
+    }
 }

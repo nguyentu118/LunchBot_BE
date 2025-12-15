@@ -13,7 +13,15 @@ import java.util.Optional;
 @Repository
 public interface CouponRepository extends JpaRepository<Coupon, Long> {
     Optional<Coupon> findByCode(String code);
+
     List<Coupon> findByMerchantId(Long merchantId);
+
+    boolean existsByCode(String code);
+
+    Optional<Coupon> findByCodeAndMerchantId(String code, Long merchantId);
+
+    @Query("SELECT c FROM Coupon c WHERE c.merchant.id = :merchantId AND c.isActive = true AND c.validTo >= CURRENT_DATE AND c.usedCount < c.usageLimit")
+    List<Coupon> findActiveCouponsByMerchant(Long merchantId);
 
     @Query("SELECT c FROM Coupon c WHERE c.merchant.id = :merchantId " +
             "AND c.isActive = true AND c.validFrom <= :today AND c.validTo >= :today")
