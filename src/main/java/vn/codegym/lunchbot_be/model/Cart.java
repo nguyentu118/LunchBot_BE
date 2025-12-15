@@ -10,7 +10,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "carts")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -28,6 +29,7 @@ public class Cart {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    @Builder.Default
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CartItem> cartItems = new ArrayList<>();
 
