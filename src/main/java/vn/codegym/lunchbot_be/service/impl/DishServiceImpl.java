@@ -4,11 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.codegym.lunchbot_be.dto.request.DishCreateRequest;
-import vn.codegym.lunchbot_be.dto.response.DishDetailResponse;
-import vn.codegym.lunchbot_be.dto.response.DishImageDTO;
-import vn.codegym.lunchbot_be.dto.response.DishSimpleResponse;
+import vn.codegym.lunchbot_be.dto.response.*;
 import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
-import vn.codegym.lunchbot_be.dto.response.SuggestedDishResponse;
 import vn.codegym.lunchbot_be.model.Category;
 import vn.codegym.lunchbot_be.model.Dish;
 import vn.codegym.lunchbot_be.model.Merchant;
@@ -187,12 +184,23 @@ public class DishServiceImpl implements DishService {
                 .merchantId(dish.getMerchant().getId())
                 .merchantName(dish.getMerchant().getRestaurantName())
                 .build();
+    }
     public List<SuggestedDishResponse> getTopSuggestedDishes() {
         List<Dish> suggestedDishes = dishRepository.findTop8SuggestedDishes();
 
         // 2. Ánh xạ từ List<Dish> sang List<SuggestedDishResponse> (DTO)
         return suggestedDishes.stream()
                 .map(SuggestedDishResponse::fromEntity) // Dùng hàm static builder trong DTO
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<DishDiscountResponse> getTop8MostDiscountedDishes() {
+        List<Dish> discountedDishes = dishRepository.findTop8MostDiscountedDishes();
+
+        // 2. Ánh xạ từ List<Dish> sang List<DishDiscountResponse> (DTO)
+        return discountedDishes.stream()
+                .map(DishDiscountResponse::fromEntity) // Dùng hàm static builder trong DTO
                 .collect(Collectors.toList());
     }
 }

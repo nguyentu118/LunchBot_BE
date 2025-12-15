@@ -66,7 +66,6 @@ public class UserController {
             return ResponseEntity.ok(userInfo);
         } catch (SecurityException e) {
             // Lỗi xác thực: Trả về trạng thái chưa đăng nhập
-            // Frontend sẽ thấy 401 hoặc logic bên dưới nếu không ném exception
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         } catch (RuntimeException e) {
             // Lỗi nghiệp vụ (User không tồn tại)

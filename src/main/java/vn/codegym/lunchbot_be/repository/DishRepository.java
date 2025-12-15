@@ -24,6 +24,15 @@ public interface DishRepository extends JpaRepository<Dish, Long> {
     @Query(value = "SELECT d FROM Dish d WHERE d.isRecommended = true AND d.isActive = true ORDER BY d.orderCount DESC LIMIT 8")
     List<Dish> findTop8SuggestedDishes();
 
+    // --- [TASK 41] Method MỚI: Lấy top 8 món ăn giảm giá nhiều nhất ---
+    @Query(value = "SELECT d FROM Dish d " +
+            "WHERE d.discountPrice IS NOT NULL " +
+            "AND d.isActive = true " +
+            "AND d.discountPrice < d.price " +
+            "ORDER BY (d.price - d.discountPrice) / d.price DESC " + // Sắp xếp theo (Giá gốc - Giá giảm) / Giá gốc DESC
+            "LIMIT 8")
+    List<Dish> findTop8MostDiscountedDishes();
+
     Page<Dish> findByMerchantId(Long merchantId, Pageable pageable);
 
     @Query("SELECT d FROM Dish d " +
