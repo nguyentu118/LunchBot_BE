@@ -8,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import vn.codegym.lunchbot_be.dto.request.DishCreateRequest;
 import vn.codegym.lunchbot_be.dto.response.DishDetailResponse;
+import vn.codegym.lunchbot_be.dto.response.DishDiscountResponse;
 import vn.codegym.lunchbot_be.dto.response.DishResponse;
 import vn.codegym.lunchbot_be.dto.response.SuggestedDishResponse;
 import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
@@ -168,6 +169,18 @@ public class DishController {
             return ResponseEntity.ok(mostViewedDishes);
         } catch (Exception e) {
             return new ResponseEntity<>("Lỗi hệ thống.", HttpStatus.INTERNAL_SERVER_ERROR);
+    @GetMapping("/top-discounts")
+    public ResponseEntity<?> getTopDiscountedDishes() {
+        try {
+            // 1. Lấy danh sách món ăn giảm giá từ Service
+            List<DishDiscountResponse> discountedDishes = dishService.getTop8MostDiscountedDishes();
+
+            // 2. Trả về kết quả
+            return ResponseEntity.ok(discountedDishes);
+
+        } catch (Exception e) {
+            System.err.println("Lỗi khi tải danh sách món ăn giảm giá: " + e.getMessage());
+            return new ResponseEntity<>("Lỗi hệ thống khi tải danh sách món ăn giảm giá.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

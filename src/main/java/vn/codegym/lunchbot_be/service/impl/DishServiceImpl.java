@@ -182,4 +182,14 @@ public class DishServiceImpl implements DishService {
                 .map(SuggestedDishResponse::fromEntity)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<DishDiscountResponse> getTop8MostDiscountedDishes() {
+        List<Dish> discountedDishes = dishRepository.findTop8MostDiscountedDishes();
+
+        // 2. Ánh xạ từ List<Dish> sang List<DishDiscountResponse> (DTO)
+        return discountedDishes.stream()
+                .map(DishDiscountResponse::fromEntity) // Dùng hàm static builder trong DTO
+                .collect(Collectors.toList());
+    }
 }
