@@ -9,11 +9,13 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "cart_items")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @ToString(exclude = {"cart", "dish"})
+@EqualsAndHashCode(exclude = {"cart", "dish"})
 public class CartItem {
 
     @Id
@@ -30,6 +32,9 @@ public class CartItem {
 
     @Column(nullable = false)
     private Integer quantity;
+
+    @Column(nullable = false)
+    private BigDecimal price;
 
     @CreationTimestamp
     private LocalDateTime addedAt;

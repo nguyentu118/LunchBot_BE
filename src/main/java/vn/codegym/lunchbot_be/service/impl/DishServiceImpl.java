@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.codegym.lunchbot_be.dto.request.DishCreateRequest;
 import vn.codegym.lunchbot_be.dto.response.DishDetailResponse;
+import vn.codegym.lunchbot_be.dto.response.DishDiscountResponse;
 import vn.codegym.lunchbot_be.dto.response.SuggestedDishResponse;
 import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
 import vn.codegym.lunchbot_be.model.Category;
