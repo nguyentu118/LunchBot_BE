@@ -171,7 +171,7 @@ public class DishController {
             return new ResponseEntity<>("Lỗi hệ thống.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
+  
     @GetMapping("/top-discounts")
     public ResponseEntity<?> getTopDiscountedDishes() {
         try {
