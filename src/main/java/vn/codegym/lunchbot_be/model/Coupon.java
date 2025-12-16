@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "coupons", uniqueConstraints = @UniqueConstraint(columnNames = "code"))
+@Table(name = "coupons")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -32,7 +32,7 @@ public class Coupon {
     @JsonIgnoreProperties({"coupons", "orders", "dishes", "user", "hibernateLazyInitializer", "handler"})
     private Merchant merchant;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = false)
     private String code;
 
     @Enumerated(EnumType.STRING)

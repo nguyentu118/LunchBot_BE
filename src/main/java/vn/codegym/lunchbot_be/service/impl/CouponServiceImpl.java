@@ -90,10 +90,6 @@ public class CouponServiceImpl implements CouponService {
     }
 
     public Coupon createCoupon(Long merchantId, CouponCreateRequest request) {
-        if (couponRepository.existsByCode(request.getCode())) {
-            throw new RuntimeException("Mã giảm giá '" + request.getCode() + "' đã tồn tại.");
-        }
-
         Merchant merchant = merchantRepository.findById(merchantId)
                 .orElseThrow(() -> new RuntimeException("Merchant không tồn tại"));
 
