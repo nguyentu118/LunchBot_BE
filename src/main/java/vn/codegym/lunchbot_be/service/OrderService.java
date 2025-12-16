@@ -1,0 +1,42 @@
+package vn.codegym.lunchbot_be.service;
+
+import vn.codegym.lunchbot_be.dto.request.CheckoutRequest;
+import vn.codegym.lunchbot_be.dto.response.CheckoutResponse;
+import vn.codegym.lunchbot_be.dto.response.OrderResponse;
+
+import java.util.List;
+
+/**
+ * Service xử lý đơn hàng
+ */
+public interface OrderService {
+    /**
+     * Lấy thông tin checkout (wrapper cho CheckoutService)
+     */
+    CheckoutResponse getCheckoutInfo(String email);
+
+    /**
+     * Áp dụng mã giảm giá (wrapper cho CheckoutService)
+     */
+    CheckoutResponse applyDiscount(String email, String couponCode);
+
+    /**
+     * Tạo đơn hàng từ giỏ hàng
+     */
+    OrderResponse createOrder(String email, CheckoutRequest request);
+
+    /**
+     * Lấy tất cả đơn hàng của user
+     */
+    List<OrderResponse> getOrdersByUser(String email);
+
+    /**
+     * Lấy chi tiết một đơn hàng
+     */
+    OrderResponse getOrderById(String email, Long orderId);
+
+    /**
+     * Hủy đơn hàng
+     */
+    OrderResponse cancelOrder(String email, Long orderId, String reason);
+}

@@ -68,8 +68,6 @@ public class MerchantController {
         Merchant updatedMerchant = merchantService.updateMerchanntInfo(UserId, request);
         return ResponseEntity.ok(updatedMerchant);
     }
-
-
      //GET /api/merchants/popular?limit=8
     @GetMapping("/popular")
     public ResponseEntity<List<PopularMerchantDto>> getPopularMerchants(

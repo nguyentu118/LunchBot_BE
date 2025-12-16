@@ -109,14 +109,11 @@ public class MerchantServiceImpl implements MerchantService {
         try {
             // Query DTO trực tiếp
             List<PopularMerchantDto> merchants = merchantRepository.findPopularMerchants(pageable);
-
             // ✅ Enrich data: thêm REAL categories và images từ DB
             merchants.forEach(dto -> {
                 enrichMerchantDataFromDB(dto);
             });
-
             return merchants;
-
         } catch (Exception e) {
             // Nếu query DTO không work, dùng alternative query
             System.out.println("⚠️ Query DTO failed, using alternative: " + e.getMessage());
@@ -191,7 +188,6 @@ public class MerchantServiceImpl implements MerchantService {
         try {
             // 1️⃣ Lấy CATEGORIES THỰC TẾ từ DB
             List<String> categoryNames = merchantRepository.findCategoryNamesByMerchantId(dto.getId());
-
             if (!categoryNames.isEmpty()) {
                 // Format: "Món Việt • Phở • Bún" (lấy tối đa 3 categories)
                 String cuisineText = categoryNames.stream()
@@ -206,7 +202,6 @@ public class MerchantServiceImpl implements MerchantService {
                 dto.setCuisineFromCategories("Đa dạng món ăn");
                 System.out.println("⚠️ Merchant #" + dto.getId() + " - No categories found");
             }
-
             // 2️⃣ Lấy ẢNH THỰC TẾ (Logic mới)
             if (dto.getImageUrl() == null || dto.getImageUrl().isEmpty()) {
 
@@ -230,7 +225,6 @@ public class MerchantServiceImpl implements MerchantService {
             e.printStackTrace();
         }
     }
-
     // Hàm helper để làm sạch chuỗi JSON ảnh
     private String parseImageJson(String json) {
         if (json == null) return null;

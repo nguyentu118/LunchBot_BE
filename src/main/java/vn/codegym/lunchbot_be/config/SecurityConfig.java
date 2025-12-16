@@ -70,6 +70,10 @@ public class SecurityConfig {
                                 "api/dishes/{dishId}/related",
                                 "/api/merchants/popular").permitAll()
                         .requestMatchers("/api/merchants/current/id").authenticated()
+                        .requestMatchers("/api/cart/**").authenticated()
+                        .requestMatchers("/api/addresses/**").authenticated()
+                        .requestMatchers("/api/checkout/**").authenticated()
+                        .requestMatchers("/api/orders/**").authenticated()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/merchants/**", "api/dishes/**").hasRole("MERCHANT")
                         .requestMatchers("/api/categories/**").permitAll()
