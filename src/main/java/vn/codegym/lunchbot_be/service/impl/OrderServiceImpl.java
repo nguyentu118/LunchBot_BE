@@ -54,6 +54,32 @@ public class OrderServiceImpl implements OrderService {
         User user = getUserByEmail(email);
         Cart cart = getCartByUser(user);
 
+        List<CartItem> itemsToOrder;
+
+        // ✅ SỬA: Kiểm tra dishIds trước
+        if (request.getDishIds() == null || request.getDishIds().isEmpty()) {
+            throw new RuntimeException("Vui lòng chọn món ăn để đặt hàng");
+        }
+
+        // Lọc theo dishIds từ frontend
+        itemsToOrder = cart.getCartItems().stream()
+                .filter(item -> request.getDishIds().contains(item.getDish().getId()))
+                .collect(Collectors.toList());
+
+        if (itemsToOrder.isEmpty()) {
+            throw new RuntimeException("Không tìm thấy món được chọn trong giỏ hàng");
+        }
+
+        // ✅ SỬA: Validate tất cả món phải cùng 1 merchant
+        long merchantCount = itemsToOrder.stream()
+                .map(item -> item.getDish().getMerchant().getId())
+                .distinct()
+                .count();
+
+        if (merchantCount > 1) {
+            throw new RuntimeException("Vui lòng chọn món từ cùng một nhà hàng");
+        }
+
         // 2. Validate address
         Address shippingAddress = addressRepository.findById(request.getAddressId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ giao hàng"));
@@ -63,10 +89,10 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // 3. Lấy merchant từ cart
-        Merchant merchant = cart.getCartItems().get(0).getDish().getMerchant();
+        Merchant merchant = itemsToOrder.get(0).getDish().getMerchant();
 
         // 4. Tính toán giá
-        BigDecimal itemsTotal = cart.getCartItems().stream()
+        BigDecimal itemsTotal = itemsToOrder.stream()
                 .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -130,7 +156,7 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         // 8. Tạo order items từ cart items
-        for (CartItem cartItem : cart.getCartItems()) {
+        for (CartItem cartItem : itemsToOrder) {
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
                     .dish(cartItem.getDish())
@@ -138,10 +164,7 @@ public class OrderServiceImpl implements OrderService {
                     .unitPrice(cartItem.getPrice())
                     .totalPrice(cartItem.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())))
                     .build();
-
             order.getOrderItems().add(orderItem);
-
-            // Tăng orderCount cho dish
             cartItem.getDish().incrementOrderCount();
         }
 
@@ -154,11 +177,12 @@ public class OrderServiceImpl implements OrderService {
         // 10. Lưu order
         Order savedOrder = orderRepository.save(order);
 
-        // 11. Xóa cart sau khi đặt hàng thành công
-        cart.clear();
+        // 11. Xóa các món đã đặt khỏi giỏ hàng
+        for (CartItem item : itemsToOrder) {
+            cart.getCartItems().remove(item);
+        }
         cartRepository.save(cart);
 
-        // 12. Map sang OrderResponse
         return mapToOrderResponse(savedOrder);
     }
 

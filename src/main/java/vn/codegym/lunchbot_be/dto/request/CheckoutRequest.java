@@ -8,11 +8,15 @@ import vn.codegym.lunchbot_be.model.enums.PaymentMethod;
 
 import jakarta.validation.constraints.NotNull;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class CheckoutRequest {
+
+    private List<Long> dishIds; // ← THÊM DÒNG NÀY
 
     @NotNull(message = "Vui lòng chọn địa chỉ giao hàng")
     private Long addressId;
