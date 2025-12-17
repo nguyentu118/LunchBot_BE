@@ -10,7 +10,6 @@ import vn.codegym.lunchbot_be.model.*;
 import vn.codegym.lunchbot_be.repository.*;
 import vn.codegym.lunchbot_be.service.AddressService;
 import vn.codegym.lunchbot_be.service.CheckoutService;
-import vn.codegym.lunchbot_be.service.CouponService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -25,9 +24,7 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final CartRepository cartRepository;
     private final AddressService addressService;
     private final CouponRepository couponRepository;
-    private final CouponService couponService;
 
-    // Danh sách tỉnh/thành nội thành (Hà Nội, TP.HCM, Đà Nẵng, Cần Thơ, Hải Phòng)
     private static final Set<String> INNER_CITY_PROVINCES = Set.of(
             "Hà Nội", "Thành phố Hà Nội", "Ha Noi",
             "Hồ Chí Minh", "Thành phố Hồ Chí Minh", "Ho Chi Minh", "TP.HCM", "TPHCM",
@@ -36,41 +33,58 @@ public class CheckoutServiceImpl implements CheckoutService {
             "Hải Phòng", "Thành phố Hải Phòng", "Hai Phong"
     );
 
-    private static final BigDecimal INNER_CITY_SHIPPING_FEE = new BigDecimal("15000"); // 15k
-    private static final BigDecimal OUTER_CITY_SHIPPING_FEE = new BigDecimal("25000"); // 25k
-    private static final BigDecimal MAX_DISCOUNT_AMOUNT = new BigDecimal("50000"); // Giảm tối đa 50k
+    private static final BigDecimal INNER_CITY_SHIPPING_FEE = new BigDecimal("15000");
+    private static final BigDecimal OUTER_CITY_SHIPPING_FEE = new BigDecimal("25000");
+    private static final BigDecimal MAX_DISCOUNT_AMOUNT = new BigDecimal("50000");
 
     @Override
     @Transactional(readOnly = true)
-    public CheckoutResponse getCheckoutInfo(String email) {// lấy thông tin checkout ban đầu
-        // 1. Validate cart
-        validateCart(email);
-
+    public CheckoutResponse getCheckoutInfo(String email) {
         User user = getUserByEmail(email);
         Cart cart = getCartByUser(user);
 
-        // 2. Lấy thông tin merchant (từ món đầu tiên trong cart)
-        CartItem firstItem = cart.getCartItems().get(0);
-        Merchant merchant = firstItem.getDish().getMerchant();
+        // ✅ 1. Kiểm tra giỏ hàng rỗng
+        if (cart.getCartItems().isEmpty()) {
+            throw new RuntimeException("Giỏ hàng đang trống. Vui lòng thêm món ăn trước khi thanh toán.");
+        }
 
-        // 3. Lấy danh sách địa chỉ
+        // ✅ 2. KHÔNG VALIDATE MERCHANT Ở ĐÂY NỮA
+        // Frontend sẽ xử lý việc chọn món từ 1 nhà hàng
+        // Backend chỉ trả về toàn bộ thông tin giỏ hàng
+
+        List<CartItem> cartItems = cart.getCartItems();
+
+        // ✅ 3. Kiểm tra món còn active không
+        for (CartItem item : cartItems) {
+            if (!item.getDish().getIsActive()) {
+                throw new RuntimeException(
+                        String.format("Món '%s' hiện không còn bán. Vui lòng xóa khỏi giỏ hàng.",
+                                item.getDish().getName())
+                );
+            }
+        }
+
+        // ✅ 4. Lấy thông tin merchant từ món đầu tiên
+        // (Frontend sẽ lọc và chỉ gửi món từ 1 merchant khi tạo order)
+        Merchant merchant = cartItems.get(0).getDish().getMerchant();
+
+        // 5. Lấy danh sách địa chỉ
         List<AddressResponse> addresses = addressService.getAllAddressesByUser(email);
         AddressResponse defaultAddress = addressService.getDefaultAddress(email);
 
-        // 4. Map cart items sang DTO
-        List<CartItemDTO> items = cart.getCartItems().stream()
+        // 6. Map cart items sang DTO
+        List<CartItemDTO> items = cartItems.stream()
                 .map(this::mapCartItemToDTO)
                 .collect(Collectors.toList());
 
-        // 5. Tính toán giá
+        // 7. Tính toán giá
         BigDecimal itemsTotal = items.stream()
-                .map(CartItemDTO::getSubtotal)// lấy subtotal của từng món
+                .map(CartItemDTO::getSubtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal serviceFee = calculateServiceFee(itemsTotal);
 
-        // Phí vận chuyển tính theo địa chỉ mặc định (nếu có)
-        BigDecimal shippingFee = INNER_CITY_SHIPPING_FEE; // Default
+        BigDecimal shippingFee = INNER_CITY_SHIPPING_FEE;
         if (defaultAddress != null) {
             shippingFee = calculateShippingFee(defaultAddress.getProvince());
         }
@@ -79,10 +93,10 @@ public class CheckoutServiceImpl implements CheckoutService {
                 .add(serviceFee)
                 .add(shippingFee);
 
-        // 6. Lấy danh sách coupon khả dụng
+        // 8. Lấy danh sách coupon khả dụng
         List<CheckoutResponse.CouponInfo> availableCoupons = getAvailableCoupons(merchant.getId(), itemsTotal);
 
-        // 7. Tính tổng số món
+        // 9. Tính tổng số món
         Integer totalItems = items.stream()
                 .mapToInt(CartItemDTO::getQuantity)
                 .sum();
@@ -109,15 +123,13 @@ public class CheckoutServiceImpl implements CheckoutService {
 
     @Override
     @Transactional(readOnly = true)
-    public CheckoutResponse applyDiscount(String email, String couponCode) {// áp dụng mã giảm giá
-        // 1. Lấy thông tin checkout ban đầu
+    public CheckoutResponse applyDiscount(String email, String couponCode) {
         CheckoutResponse checkoutInfo = getCheckoutInfo(email);
 
         if (couponCode == null || couponCode.trim().isEmpty()) {
             return checkoutInfo;
         }
 
-        // 2. Validate coupon
         Coupon coupon = couponRepository.findByCodeAndMerchantId(
                 couponCode.toUpperCase(),
                 checkoutInfo.getMerchantId()
@@ -138,21 +150,17 @@ public class CheckoutServiceImpl implements CheckoutService {
             );
         }
 
-        // 3. Tính discount
         BigDecimal discountAmount = coupon.calculateDiscount(checkoutInfo.getItemsTotal());
 
-        // 4. Áp dụng giới hạn giảm tối đa 50k
         if (discountAmount.compareTo(MAX_DISCOUNT_AMOUNT) > 0) {
             discountAmount = MAX_DISCOUNT_AMOUNT;
         }
 
-        // 5. Tính lại tổng tiền
         BigDecimal totalAmount = checkoutInfo.getItemsTotal()
                 .subtract(discountAmount)
                 .add(checkoutInfo.getServiceFee())
                 .add(checkoutInfo.getShippingFee());
 
-        // 6. Cập nhật response
         checkoutInfo.setDiscountAmount(discountAmount);
         checkoutInfo.setTotalAmount(totalAmount);
         checkoutInfo.setAppliedCouponCode(couponCode.toUpperCase());
@@ -162,20 +170,17 @@ public class CheckoutServiceImpl implements CheckoutService {
 
     @Override
     public BigDecimal calculateServiceFee(BigDecimal itemsTotal) {
-        // Theo yêu cầu: Phí dịch vụ = 0đ
         return BigDecimal.ZERO;
     }
 
     @Override
     public BigDecimal calculateShippingFee(String province) {
         if (province == null || province.trim().isEmpty()) {
-            return INNER_CITY_SHIPPING_FEE; // Default nội thành
+            return INNER_CITY_SHIPPING_FEE;
         }
 
-        // Chuẩn hóa tên tỉnh (xóa khoảng trắng thừa, lowercase để so sánh)
         String normalizedProvince = province.trim();
 
-        // Kiểm tra có phải nội thành không
         boolean isInnerCity = INNER_CITY_PROVINCES.stream()
                 .anyMatch(city -> normalizedProvince.equalsIgnoreCase(city) ||
                         normalizedProvince.toLowerCase().contains(city.toLowerCase()));
@@ -190,33 +195,12 @@ public class CheckoutServiceImpl implements CheckoutService {
         Cart cart = cartRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new RuntimeException("Giỏ hàng không tồn tại"));
 
-        // 1. Kiểm tra giỏ hàng rỗng
         if (cart.getCartItems().isEmpty()) {
             throw new RuntimeException("Giỏ hàng đang trống. Vui lòng thêm món ăn trước khi thanh toán.");
         }
 
-        // 2. Kiểm tra tất cả món thuộc cùng 1 merchant
-        Set<Long> merchantIds = cart.getCartItems().stream()
-                .map(item -> item.getDish().getMerchant().getId())
-                .collect(Collectors.toSet());
-
-        if (merchantIds.size() > 1) {
-            throw new RuntimeException(
-                    "Giỏ hàng chứa món ăn từ nhiều cửa hàng. " +
-                            "Mỗi đơn hàng chỉ có thể đặt từ 1 cửa hàng. " +
-                            "Vui lòng xóa bớt món từ các cửa hàng khác."
-            );
-        }
-
-        // 3. Kiểm tra món ăn còn active không
-        for (CartItem item : cart.getCartItems()) {
-            if (!item.getDish().getIsActive()) {
-                throw new RuntimeException(
-                        String.format("Món '%s' hiện không còn bán. Vui lòng xóa khỏi giỏ hàng.",
-                                item.getDish().getName())
-                );
-            }
-        }
+        // ✅ KHÔNG validate merchant ở đây
+        // Validation sẽ được thực hiện ở OrderService khi tạo order
     }
 
     // ========== HELPER METHODS ==========
