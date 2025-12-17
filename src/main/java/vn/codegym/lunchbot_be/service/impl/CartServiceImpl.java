@@ -47,7 +47,6 @@ public class CartServiceImpl implements CartService {
         if (cart == null) {
             return 0L;
         }
-
         // 3. Tính tổng số lượng các món trong Giỏ hàng
         return cartItemRepository.countTotalItemsByCartId(cart.getId());
     }
