@@ -1,5 +1,6 @@
 package vn.codegym.lunchbot_be.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.hibernate.annotations.ColumnDefault;
 import vn.codegym.lunchbot_be.model.enums.DiscountType;
@@ -65,6 +66,7 @@ public class Coupon {
     private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "coupon")
+    @JsonIgnore
     private List<Order> orders = new ArrayList<>();
 
     // Business methods
