@@ -14,8 +14,6 @@ public class DishCreateRequest {
     @Size(max = 255, message = "Tên món ăn không được quá 255 ký tự")
     private String name;
 
-    @NotBlank(message = "Địa chỉ không được để trống")
-    private String address;
 
     private String imagesUrls;
 

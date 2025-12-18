@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import vn.codegym.lunchbot_be.dto.request.CouponRequest;
 import vn.codegym.lunchbot_be.dto.response.CouponResponse;
 import vn.codegym.lunchbot_be.model.Coupon;
+import vn.codegym.lunchbot_be.scheduler.CouponScheduler;
 import vn.codegym.lunchbot_be.service.CouponService;
 
 import java.util.List;
@@ -15,6 +16,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CouponController {
     private final CouponService couponService;
+
+    private final CouponScheduler couponScheduler;
 
     @PostMapping("/validate")
     public ResponseEntity<CouponResponse> validateCoupon(@RequestBody CouponRequest request) {

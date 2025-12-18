@@ -1,6 +1,7 @@
 package vn.codegym.lunchbot_be.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "dishes")
@@ -37,10 +39,7 @@ public class Dish {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private String address;
-
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", length = 5000)
     private String description;
 
     @Column(name = "images_urls",columnDefinition = "JSON")

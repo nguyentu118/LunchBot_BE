@@ -18,7 +18,6 @@ public class DishResponse {
     // 💡 SỬ DỤNG MERCHANT DTO
     private MerchantResponseDTO merchant;
 
-    private String address;
     private String name;
     private String description;
     private String imagesUrls;
@@ -52,7 +51,6 @@ public class DishResponse {
                 .id(dish.getId())
                 .merchant(MerchantResponseDTO.fromEntity(dish.getMerchant())) // Convert Merchant
                 .name(dish.getName())
-                .address(dish.getAddress())
                 .description(dish.getDescription())
                 .imagesUrls(dish.getImagesUrls())
                 .price(dish.getPrice())

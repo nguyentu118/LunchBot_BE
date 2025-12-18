@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,6 +18,8 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
     List<Coupon> findByMerchantId(Long merchantId);
 
     boolean existsByCode(String code);
+
+    List<Coupon> findByIsActiveTrueAndValidToBefore(LocalDate date);
 
     Optional<Coupon> findByCodeAndMerchantId(String code, Long merchantId);
 

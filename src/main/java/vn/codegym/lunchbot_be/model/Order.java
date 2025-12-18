@@ -78,7 +78,7 @@ public class Order {
     @Column(precision = 12, scale = 2)
     private BigDecimal commissionFee = BigDecimal.ZERO;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", length = 500)
     private String notes;
 
     @CreationTimestamp
