@@ -54,4 +54,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT o FROM Order o WHERE o.orderDate BETWEEN :startDate AND :endDate")
     List<Order> findOrdersBetweenDates(@Param("startDate") LocalDateTime startDate,
                                        @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT COUNT(o) FROM Order o " +
+            "JOIN o.orderItems oi " +
+            "WHERE oi.dishId = :dishId " +
+            "AND o.status NOT IN ('COMPLETED', 'CANCELLED')")
+    Long countPendingOrdersByDishId(@Param("dishId") Long dishId);
 }

@@ -82,4 +82,6 @@ public interface DishRepository extends JpaRepository<Dish, Long> {
 
     @Query("SELECT d FROM Dish d WHERE d.merchant.id = :merchantId AND d.isActive = true")
     Page<Dish> findActiveDishesByMerchant(@Param("merchantId") Long merchantId, Pageable pageable);
+
+    List<Dish> findByMerchantIdAndIsActiveTrue(Long merchantId);
 }

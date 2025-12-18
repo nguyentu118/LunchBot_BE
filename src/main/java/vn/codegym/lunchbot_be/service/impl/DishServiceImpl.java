@@ -17,6 +17,7 @@ import vn.codegym.lunchbot_be.model.Merchant;
 import vn.codegym.lunchbot_be.repository.CategoryRepository;
 import vn.codegym.lunchbot_be.repository.DishRepository;
 import vn.codegym.lunchbot_be.repository.MerchantRepository;
+import vn.codegym.lunchbot_be.repository.OrderRepository;
 import vn.codegym.lunchbot_be.service.DishService;
 
 import java.math.BigDecimal;
@@ -33,6 +34,7 @@ public class DishServiceImpl implements DishService {
     private final DishRepository dishRepository;
     private final MerchantRepository merchantRepository;
     private final CategoryRepository categoryRepository;
+    private final OrderRepository orderRepository;
 
     @Override
     @Transactional
@@ -68,7 +70,7 @@ public class DishServiceImpl implements DishService {
     public List<Dish> findAllDishesByMerchantUsername(String username) {
         Merchant merchant = merchantRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Merchant không tồn tại với tài khoản: " + username));
-        return dishRepository.findByMerchantId(merchant.getId());
+        return dishRepository.findByMerchantIdAndIsActiveTrue(merchant.getId());
     }
 
     @Override
@@ -112,16 +114,28 @@ public class DishServiceImpl implements DishService {
     @Transactional
     public void deleteDish(Long dishId, String username) {
         Merchant merchant = merchantRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Merchant không tồn tại với tài khoản này."));
+                .orElseThrow(() -> new RuntimeException("Merchant không tồn tại"));
 
-        Dish existingDish = dishRepository.findById(dishId)
-                .orElseThrow(() -> new RuntimeException("Món ăn không tồn tại với ID: " + dishId));
+        Dish dish = dishRepository.findById(dishId)
+                .orElseThrow(() -> new RuntimeException("Món ăn không tồn tại"));
 
-        if (!existingDish.getMerchant().getId().equals(merchant.getId())) {
-            throw new RuntimeException("Bạn không có quyền xóa món ăn này.");
+        if (!dish.getMerchant().getId().equals(merchant.getId())) {
+            throw new RuntimeException("Bạn không có quyền xóa món này");
         }
 
-        dishRepository.delete(existingDish);
+        // ✅ KIỂM TRA có đơn hàng đang pending/processing không
+        Long pendingOrderCount = orderRepository.countPendingOrdersByDishId(dishId);
+
+        if (pendingOrderCount > 0) {
+            throw new RuntimeException(
+                    "Không thể xóa món ăn này vì đang có " + pendingOrderCount +
+                            " đơn hàng chưa hoàn thành"
+            );
+        }
+
+        // ✅ SOFT DELETE - Chỉ ẩn món khỏi danh sách, không ảnh hưởng đơn hàng cũ
+        dish.setIsActive(false);
+        dishRepository.save(dish);
     }
 
     @Override
