@@ -2,6 +2,7 @@ package vn.codegym.lunchbot_be.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vn.codegym.lunchbot_be.dto.request.CouponCreateRequest;
 import vn.codegym.lunchbot_be.dto.request.CouponRequest;
 import vn.codegym.lunchbot_be.dto.response.CouponResponse;
@@ -123,5 +124,32 @@ public class CouponServiceImpl implements CouponService {
     @Override
     public List<Coupon> getActiveCouponsByMerchant(Long merchantId) {
         return couponRepository.findActiveCouponsByMerchant(merchantId, LocalDate.now());
+    }
+
+    @Override
+    @Transactional
+    public void deleteCoupon(Long couponId) {
+        Coupon coupon = couponRepository.findById(couponId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy coupon"));
+        couponRepository.delete(coupon);
+    }
+
+    @Override
+    @Transactional
+    public Coupon updateCoupon(Long couponId, CouponCreateRequest request) {
+        Coupon coupon = couponRepository.findById(couponId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy coupon"));
+
+        // ✅ Cập nhật ĐẦY ĐỦ các trường từ request
+        coupon.setCode(request.getCode().toUpperCase());
+        coupon.setDiscountType(request.getDiscountType());
+        coupon.setDiscountValue(request.getDiscountValue());
+        coupon.setUsageLimit(request.getUsageLimit());
+        coupon.setMinOrderValue(request.getMinOrderValue());
+        coupon.setValidFrom(request.getValidFrom());
+        coupon.setValidTo(request.getValidTo());
+
+        // ✅ Save và return
+        return couponRepository.save(coupon);
     }
 }

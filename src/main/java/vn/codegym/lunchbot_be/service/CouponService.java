@@ -1,5 +1,6 @@
 package vn.codegym.lunchbot_be.service;
 
+import vn.codegym.lunchbot_be.dto.request.CouponCreateRequest;
 import vn.codegym.lunchbot_be.dto.request.CouponRequest;
 import vn.codegym.lunchbot_be.dto.response.CouponResponse;
 import vn.codegym.lunchbot_be.model.Coupon;
@@ -12,4 +13,8 @@ public interface CouponService {
     List<Coupon> getAllCouponsByMerchant(Long merchantId);
 
     List<Coupon> getActiveCouponsByMerchant(Long merchantId);
+
+    void deleteCoupon(Long couponId);
+
+    Coupon updateCoupon(Long couponId, CouponCreateRequest request);
 }

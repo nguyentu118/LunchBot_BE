@@ -19,16 +19,14 @@ public class CouponScheduler {
     private final CouponRepository couponRepository;
 
     @Scheduled(cron = "0 0 0 * * ?") // Production: mỗi đêm 00:00
-    //@Scheduled(fixedRate = 120000) // Test: mỗi 1 phút
+    //@Scheduled(fixedRate = 120000) // Test: mỗi 2 phút
     @Transactional
     public void deactivateExpiredCoupons() {
         log.info("🕐 Bắt đầu kiểm tra coupon hết hạn - {}", LocalDate.now());
 
         try {
-            // ✅ Dùng LocalDate.now() thay vì LocalDateTime
             LocalDate today = LocalDate.now();
 
-            // ✅ Tìm coupon active nhưng đã hết hạn (validTo < today)
             List<Coupon> expiredCoupons = couponRepository
                     .findByIsActiveTrueAndValidToBefore(today);
 
@@ -45,7 +43,6 @@ public class CouponScheduler {
                         coupon.getCode(),
                         coupon.getValidTo()); // ✅ Dùng getValidTo()
             });
-
             couponRepository.saveAll(expiredCoupons);
 
             log.info("✅ Đã vô hiệu hóa {} coupon hết hạn", expiredCoupons.size());
