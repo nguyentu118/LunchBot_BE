@@ -18,7 +18,6 @@ public class DishDetailResponse {
     private Long id;
     private String name;
     private String description;
-    private String address;
     private BigDecimal price;
     private BigDecimal discountPrice;
     private Integer preparationTime;
@@ -39,7 +38,6 @@ public class DishDetailResponse {
         this.id = dish.getId();
         this.name = dish.getName();
         this.description = dish.getDescription();
-        this.address = dish.getAddress();
         this.price = dish.getPrice();
         this.discountPrice = dish.getDiscountPrice();
         this.preparationTime = dish.getPreparationTime();

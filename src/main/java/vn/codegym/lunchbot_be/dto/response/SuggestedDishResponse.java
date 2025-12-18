@@ -13,6 +13,7 @@ public class SuggestedDishResponse {
     private String name;
     // Lấy ảnh đầu tiên trong JSON array
     private String imageUrl; // Ảnh đại diện món
+    private String merchantName;
     private String merchantAddress; // Địa chỉ của Merchant (Nơi bán/cung cấp món ăn)
     private Integer preparationTime; // Thời gian chế biến
     private BigDecimal price; // Giá gốc
@@ -43,6 +44,7 @@ public class SuggestedDishResponse {
                 .name(dish.getName())
                 .imageUrl(firstImageUrl)
                 // Lấy địa chỉ từ Merchant
+                .merchantName(dish.getMerchant() != null ? dish.getMerchant().getRestaurantName() : "Không rõ")
                 .merchantAddress(dish.getMerchant() != null ? dish.getMerchant().getAddress() : "Không rõ")
                 .preparationTime(dish.getPreparationTime())
                 .price(dish.getPrice())
