@@ -2,6 +2,7 @@ package vn.codegym.lunchbot_be.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -127,10 +128,18 @@ public class DishController {
             // Trả về 200 OK với thông báo thành công
             return new ResponseEntity<>("Món ăn đã được xóa thành công.", HttpStatus.OK);
 
+        } catch (DataIntegrityViolationException e) {
+            // Trả về mã lỗi 409 Conflict
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "Món ăn đang được đặt trong đơn hàng hoặc giỏ hàng, không thể xóa!"));
+
         } catch (RuntimeException e) {
-            return new ResponseEntity<>("Xóa món ăn thất bại: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Xóa món ăn thất bại: " + e.getMessage()));
+
         } catch (Exception e) {
-            return new ResponseEntity<>("Xóa món ăn thất bại do lỗi hệ thống.", HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi hệ thống: " + e.getMessage()));
         }
     }
 

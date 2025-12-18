@@ -155,17 +155,24 @@ public class OrderServiceImpl implements OrderService {
                 .orderItems(new ArrayList<>())
                 .build();
 
-        // 8. Tạo order items từ cart items
+        // 8. Tạo order items từ cart items - ✅ LƯU SNAPSHOT
         for (CartItem cartItem : itemsToOrder) {
+            Dish dish = cartItem.getDish();
+            String firstImage = extractFirstImageUrl(dish.getImagesUrls());
+
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
-                    .dish(cartItem.getDish())
+                    .dishId(dish.getId())  // ✅ Chỉ lưu ID
+                    .dishName(dish.getName())  // ✅ Snapshot tên
+                    .dishImage(firstImage)  // ✅ Snapshot ảnh
                     .quantity(cartItem.getQuantity())
                     .unitPrice(cartItem.getPrice())
                     .totalPrice(cartItem.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())))
+                    .merchantId(merchant.getId())  // ✅ Lưu merchant info
+                    .merchantName(merchant.getRestaurantName())
                     .build();
             order.getOrderItems().add(orderItem);
-            cartItem.getDish().incrementOrderCount();
+            dish.incrementOrderCount();
         }
 
         // 9. Tăng usedCount cho coupon (nếu có)
@@ -340,13 +347,12 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private OrderItemDTO mapToOrderItemDTO(OrderItem item) {
-        String firstImage = extractFirstImageUrl(item.getDish().getImagesUrls());
-
+        // Không cần hàm extractFirstImageUrl nữa vì dishImage trong DB đã lưu link ảnh rồi
         return OrderItemDTO.builder()
                 .id(item.getId())
-                .dishId(item.getDish().getId())
-                .dishName(item.getDish().getName())
-                .dishImage(firstImage)
+                .dishId(item.getDishId())       // Lấy từ snapshot
+                .dishName(item.getDishName())   // Lấy từ snapshot
+                .dishImage(item.getDishImage()) // Lấy từ snapshot
                 .quantity(item.getQuantity())
                 .unitPrice(item.getUnitPrice())
                 .totalPrice(item.getTotalPrice())
