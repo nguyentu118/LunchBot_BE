@@ -1,7 +1,9 @@
 package vn.codegym.lunchbot_be.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.codegym.lunchbot_be.dto.request.DishCreateRequest;
@@ -46,7 +48,6 @@ public class DishServiceImpl implements DishService {
         Dish newDish = Dish.builder()
                 .merchant(merchant)
                 .name(request.getName())
-                .address(request.getAddress())
                 .description(request.getDescription())
                 .imagesUrls(request.getImagesUrls())
                 .price(request.getPrice())
@@ -95,7 +96,6 @@ public class DishServiceImpl implements DishService {
         }
 
         existingDish.setName(request.getName());
-        existingDish.setAddress(request.getAddress());
         existingDish.setDescription(request.getDescription());
         existingDish.setImagesUrls(request.getImagesUrls());
         existingDish.setPrice(request.getPrice());
@@ -193,4 +193,11 @@ public class DishServiceImpl implements DishService {
                 .map(DishDiscountResponse::fromEntity) // Dùng hàm static builder trong DTO
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public Page<Dish> searchDishes(Long merchantId, String keyword, Long categoryId,
+                                   BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
+        return dishRepository.searchDishes(merchantId, keyword, categoryId, minPrice, maxPrice, pageable);
+    }
+
 }

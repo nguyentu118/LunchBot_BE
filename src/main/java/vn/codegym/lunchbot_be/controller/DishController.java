@@ -2,9 +2,14 @@ package vn.codegym.lunchbot_be.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import vn.codegym.lunchbot_be.dto.request.DishCreateRequest;
 import vn.codegym.lunchbot_be.dto.response.DishDetailResponse;
@@ -12,9 +17,13 @@ import vn.codegym.lunchbot_be.dto.response.DishDiscountResponse;
 import vn.codegym.lunchbot_be.dto.response.DishResponse;
 import vn.codegym.lunchbot_be.dto.response.SuggestedDishResponse;
 import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
+import vn.codegym.lunchbot_be.model.Category;
 import vn.codegym.lunchbot_be.model.Dish;
 import vn.codegym.lunchbot_be.service.DishService;
+import vn.codegym.lunchbot_be.service.impl.MerchantServiceImpl;
+import vn.codegym.lunchbot_be.service.impl.UserDetailsImpl;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +36,69 @@ import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
 @RequiredArgsConstructor
 public class DishController {
     private final DishService dishService;
+
+    private final MerchantServiceImpl merchantService;
+
+    @GetMapping("/merchant/search")
+    public ResponseEntity<?> searchMyDishes(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        try {
+            Long userId = userDetails.getId();
+            Long merchantId = merchantService.getMerchantIdByUserId(userId);
+
+            Pageable pageable = PageRequest.of(page, size);
+
+            Page<Dish> dishes = dishService.searchDishes(
+                    merchantId,
+                    keyword,
+                    categoryId,
+                    minPrice,
+                    maxPrice,
+                    pageable
+            );
+
+            List<Map<String, Object>> simpleDishes = dishes.getContent().stream()
+                    .map(dish -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("id", dish.getId());
+                        map.put("name", dish.getName());
+                        map.put("description", dish.getDescription());
+                        map.put("imagesUrls", dish.getImagesUrls());
+                        map.put("price", dish.getPrice());
+                        map.put("discountPrice", dish.getDiscountPrice());
+                        map.put("preparationTime", dish.getPreparationTime());
+                        map.put("isRecommended", dish.getIsRecommended());
+                        map.put("isActive", dish.getIsActive());
+
+                        // ✅ THÊM categoryIds
+                        List<Long> categoryIds = dish.getCategories().stream()
+                                .map(Category::getId)
+                                .collect(Collectors.toList());
+                        map.put("categoryIds", categoryIds);
+
+                        return map;
+                    })
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(Map.of(
+                    "content", dishes.getContent(),
+                    "totalElements", dishes.getTotalElements(),
+                    "totalPages", dishes.getTotalPages(),
+                    "currentPage", dishes.getNumber(),
+                    "size", dishes.getSize()
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
 
     @PostMapping("/create")
     public ResponseEntity<?> createDish(@Valid @RequestBody DishCreateRequest request, Authentication authentication) {
@@ -64,6 +136,10 @@ public class DishController {
                         map.put("preparationTime", dish.getPreparationTime());
                         map.put("isRecommended", dish.getIsRecommended());
                         map.put("isActive", dish.getIsActive());
+                        List<Long> categoryIds = dish.getCategories().stream()
+                                .map(Category::getId)
+                                .collect(Collectors.toList());
+                        map.put("categoryIds", categoryIds);
                         return map;
                     })
                     .collect(Collectors.toList());
