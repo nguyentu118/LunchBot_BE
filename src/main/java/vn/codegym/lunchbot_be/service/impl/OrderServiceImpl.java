@@ -298,7 +298,40 @@ public class OrderServiceImpl implements OrderService {
         return mapToOrderResponse(savedOrder);
     }
 
+    // Thêm method này vào OrderServiceImpl.java
 
+    @Override
+    @Transactional(readOnly = true)
+    public OrderStatisticsResponse getOrderStatisticsByMerchant(Long merchantId) {
+        // Khởi tạo response với giá trị mặc định = 0
+        OrderStatisticsResponse stats = OrderStatisticsResponse.builder()
+                .pendingCount(0L)
+                .confirmedCount(0L)
+                .processingCount(0L)
+                .readyCount(0L)
+                .deliveringCount(0L)
+                .completedCount(0L)
+                .cancelledCount(0L)
+                .todayOrders(0L)
+                .build();
+
+        // Đếm số đơn theo từng trạng thái
+        stats.setPendingCount(orderRepository.countByMerchantIdAndStatus(merchantId, OrderStatus.PENDING));
+        stats.setConfirmedCount(orderRepository.countByMerchantIdAndStatus(merchantId, OrderStatus.CONFIRMED));
+        stats.setProcessingCount(orderRepository.countByMerchantIdAndStatus(merchantId, OrderStatus.PROCESSING));
+        stats.setReadyCount(orderRepository.countByMerchantIdAndStatus(merchantId, OrderStatus.READY));
+        stats.setDeliveringCount(orderRepository.countByMerchantIdAndStatus(merchantId, OrderStatus.DELIVERING));
+        stats.setCompletedCount(orderRepository.countByMerchantIdAndStatus(merchantId, OrderStatus.COMPLETED));
+        stats.setCancelledCount(orderRepository.countByMerchantIdAndStatus(merchantId, OrderStatus.CANCELLED));
+
+        // Đếm đơn hôm nay
+        stats.setTodayOrders(orderRepository.getTodayOrderCount(merchantId));
+
+        // Tính tổng và đơn đang xử lý
+        stats.calculateTotal();
+
+        return stats;
+    }
     /**
      * Generate order number theo format: ORD-YYYYMMDD-XXX
      * VD: ORD-20231215-001

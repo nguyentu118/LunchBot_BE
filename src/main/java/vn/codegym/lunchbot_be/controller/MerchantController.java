@@ -13,6 +13,7 @@ import vn.codegym.lunchbot_be.dto.request.CouponCreateRequest;
 import vn.codegym.lunchbot_be.dto.request.MerchantUpdateRequest;
 import vn.codegym.lunchbot_be.dto.response.MerchantResponseDTO;
 import vn.codegym.lunchbot_be.dto.response.OrderResponse;
+import vn.codegym.lunchbot_be.dto.response.OrderStatisticsResponse;
 import vn.codegym.lunchbot_be.dto.response.PopularMerchantDto;
 import vn.codegym.lunchbot_be.model.Coupon;
 import vn.codegym.lunchbot_be.model.Merchant;
@@ -180,6 +181,28 @@ public class MerchantController {
             return ResponseEntity.ok(updatedOrder);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    /**
+     * GET /api/merchants/orders/statistics
+     * Thống kê đơn hàng theo trạng thái
+     */
+    @GetMapping("/orders/statistics")
+    @PreAuthorize("hasRole('MERCHANT')")
+    public ResponseEntity<?> getOrderStatistics(
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        try {
+            Long userId = userDetails.getId();
+            Long merchantId = merchantService.getMerchantIdByUserId(userId);
+
+            OrderStatisticsResponse statistics = orderService.getOrderStatisticsByMerchant(merchantId);
+
+            return ResponseEntity.ok(statistics);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Không thể tải thống kê: " + e.getMessage()));
         }
     }
 
