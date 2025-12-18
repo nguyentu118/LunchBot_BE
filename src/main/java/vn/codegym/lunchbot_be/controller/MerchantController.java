@@ -12,10 +12,13 @@ import org.springframework.web.bind.annotation.*;
 import vn.codegym.lunchbot_be.dto.request.CouponCreateRequest;
 import vn.codegym.lunchbot_be.dto.request.MerchantUpdateRequest;
 import vn.codegym.lunchbot_be.dto.response.MerchantResponseDTO;
+import vn.codegym.lunchbot_be.dto.response.OrderResponse;
 import vn.codegym.lunchbot_be.dto.response.PopularMerchantDto;
 import vn.codegym.lunchbot_be.model.Coupon;
 import vn.codegym.lunchbot_be.model.Merchant;
+import vn.codegym.lunchbot_be.model.enums.OrderStatus;
 import vn.codegym.lunchbot_be.repository.MerchantRepository;
+import vn.codegym.lunchbot_be.service.OrderService;
 import vn.codegym.lunchbot_be.service.impl.CouponServiceImpl;
 import vn.codegym.lunchbot_be.service.impl.MerchantServiceImpl;
 import vn.codegym.lunchbot_be.service.impl.UserDetailsImpl;
@@ -31,6 +34,9 @@ public class MerchantController {
     private final MerchantServiceImpl merchantService;
 
     private final CouponServiceImpl couponService;
+
+    private final OrderService orderService;
+
 
     @GetMapping("/current/id")
     public ResponseEntity<?> getCurrentMerchantId(@AuthenticationPrincipal UserDetailsImpl userDetails) {
@@ -136,4 +142,45 @@ public class MerchantController {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
+
+    /**
+     * GET /api/merchants/orders?status=PENDING
+     */
+    @GetMapping("/orders")
+    @PreAuthorize("hasRole('MERCHANT')")
+    public ResponseEntity<?> getMerchantOrders(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @RequestParam(required = false) OrderStatus status // Cho phép lọc trạng thái (Optional)
+    ) {
+        try {
+            Long userId = userDetails.getId();
+            Long merchantId = merchantService.getMerchantIdByUserId(userId);
+
+            List<OrderResponse> orders = orderService.getOrdersByMerchant(merchantId, status);
+            return ResponseEntity.ok(orders);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+    /**
+     * PUT /api/merchants/orders/{orderId}/status?status=PROCESSING
+     */
+    @PutMapping("/orders/{orderId}/status")
+    @PreAuthorize("hasRole('MERCHANT')")
+    public ResponseEntity<?> updateOrderStatus(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PathVariable Long orderId,
+            @RequestParam OrderStatus status
+    ) {
+        try {
+            Long userId = userDetails.getId();
+            Long merchantId = merchantService.getMerchantIdByUserId(userId);
+
+            OrderResponse updatedOrder = orderService.updateOrderStatus(merchantId, orderId, status);
+            return ResponseEntity.ok(updatedOrder);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
 }
