@@ -2,6 +2,7 @@ package vn.codegym.lunchbot_be.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -11,10 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import vn.codegym.lunchbot_be.dto.request.CouponCreateRequest;
 import vn.codegym.lunchbot_be.dto.request.MerchantUpdateRequest;
-import vn.codegym.lunchbot_be.dto.response.MerchantResponseDTO;
-import vn.codegym.lunchbot_be.dto.response.OrderResponse;
-import vn.codegym.lunchbot_be.dto.response.OrderStatisticsResponse;
-import vn.codegym.lunchbot_be.dto.response.PopularMerchantDto;
+import vn.codegym.lunchbot_be.dto.response.*;
 import vn.codegym.lunchbot_be.model.Coupon;
 import vn.codegym.lunchbot_be.model.Merchant;
 import vn.codegym.lunchbot_be.model.enums.OrderStatus;
@@ -203,6 +201,46 @@ public class MerchantController {
         } catch (Exception e) {
             return ResponseEntity.badRequest()
                     .body(Map.of("message", "Không thể tải thống kê: " + e.getMessage()));
+        }
+    }
+    @GetMapping("/{merchantId}/statistics/revenue")
+    public ResponseEntity<RevenueStatisticsResponse> getRevenueStats(
+            @PathVariable Long merchantId,
+            @RequestParam(required = false) String timeRange,    // WEEK, MONTH, QUARTER, YEAR
+            @RequestParam(required = false) Integer week,        // Tuần (1-53)
+            @RequestParam(required = false) Integer month,       // Tháng (1-12)
+            @RequestParam(required = false) Integer quarter,     // Quý (1-4)
+            @RequestParam(required = false) Integer year,        // Năm (VD: 2024)
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        // ✅ Gọi service với các params bổ sung
+        RevenueStatisticsResponse response = orderService.getRevenueStatistics(
+                merchantId, timeRange, week, month, quarter, year, page, size
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/orders/by-dish/{dishId}")
+    @PreAuthorize("hasRole('MERCHANT')")
+    public ResponseEntity<?> getOrdersByDish(
+            @PathVariable Long dishId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal UserDetailsImpl userDetails){
+        try {
+            Long userId = userDetails.getId();
+            Long merchantId = merchantService.getMerchantIdByUserId(userId);
+            if (merchantId == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "Không tìm thấy merchant cho user hiện tại."));
+            }
+
+            Page<OrderResponse> ordersPage = orderService.getOrdersByDish(merchantId, dishId, page, size);
+            return ResponseEntity.ok(ordersPage);
+    }catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi khi lấy đơn hàng theo món ăn: " + e.getMessage()));
         }
     }
 

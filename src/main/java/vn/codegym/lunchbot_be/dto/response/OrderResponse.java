@@ -25,6 +25,10 @@ public class OrderResponse {
     private PaymentMethod paymentMethod;
     private PaymentStatus paymentStatus;
 
+    // ========== THÔNG TIN KHÁCH HÀNG ✅ THÊM ==========
+    private String customerName;        // ✅ THÊM FIELD NÀY
+    private String customerPhone;       // ✅ OPTIONAL: Thêm nếu cần
+
     // ========== THÔNG TIN CỬA HÀNG ==========
     private Long merchantId;
     private String merchantName;

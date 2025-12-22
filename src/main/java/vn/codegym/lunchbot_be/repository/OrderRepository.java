@@ -60,4 +60,31 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "WHERE oi.dishId = :dishId " +
             "AND o.status NOT IN ('COMPLETED', 'CANCELLED')")
     Long countPendingOrdersByDishId(@Param("dishId") Long dishId);
+
+    // 1. Tính tổng doanh thu theo khoảng ngày (dùng cho cả Tuần/Tháng/Quý)
+    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.merchant.id = :merchantId " +
+            "AND o.status = 'COMPLETED' " + // Chỉ tính đơn đã hoàn thành
+            "AND o.orderDate BETWEEN :startDate AND :endDate")
+    BigDecimal sumRevenueByDateRange(@Param("merchantId") Long merchantId,
+                                     @Param("startDate") LocalDateTime startDate,
+                                     @Param("endDate") LocalDateTime endDate);
+
+    // 2. Lấy danh sách đơn hàng theo khoảng ngày (có phân trang cho phần hiển thị bên dưới)
+    @Query("SELECT o FROM Order o WHERE o.merchant.id = :merchantId " +
+            "AND o.status = 'COMPLETED' " +
+            "AND o.orderDate BETWEEN :startDate AND :endDate")
+    Page<Order> findOrdersByDateRange(@Param("merchantId") Long merchantId,
+                                      @Param("startDate") LocalDateTime startDate,
+                                      @Param("endDate") LocalDateTime endDate,
+                                      Pageable pageable);
+
+    @Query("SELECT DISTINCT o FROM Order o " +
+            "JOIN o.orderItems oi " +
+            "WHERE o.merchant.id = :merchantId " +
+            "AND oi.dishId = :dishId")
+    Page<Order> findOrdersByDishId(
+            @Param("merchantId") Long merchantId,
+            @Param("dishId") Long dishId,
+            Pageable pageable
+    );
 }

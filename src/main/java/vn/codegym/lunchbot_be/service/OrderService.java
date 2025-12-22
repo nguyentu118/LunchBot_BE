@@ -1,9 +1,11 @@
 package vn.codegym.lunchbot_be.service;
 
+import org.springframework.data.domain.Page;
 import vn.codegym.lunchbot_be.dto.request.CheckoutRequest;
 import vn.codegym.lunchbot_be.dto.response.CheckoutResponse;
 import vn.codegym.lunchbot_be.dto.response.OrderResponse;
 import vn.codegym.lunchbot_be.dto.response.OrderStatisticsResponse;
+import vn.codegym.lunchbot_be.dto.response.RevenueStatisticsResponse;
 import vn.codegym.lunchbot_be.model.enums.OrderStatus;
 
 import java.util.List;
@@ -22,24 +24,12 @@ public interface OrderService {
      */
     CheckoutResponse applyDiscount(String email, String couponCode);
 
-    /**
-     * Tạo đơn hàng từ giỏ hàng
-     */
     OrderResponse createOrder(String email, CheckoutRequest request);
 
-    /**
-     * Lấy tất cả đơn hàng của user
-     */
     List<OrderResponse> getOrdersByUser(String email);
 
-    /**
-     * Lấy chi tiết một đơn hàng
-     */
     OrderResponse getOrderById(String email, Long orderId);
 
-    /**
-     * Hủy đơn hàng
-     */
     OrderResponse cancelOrder(String email, Long orderId, String reason);
 
     // Lấy danh sách đơn hàng của Merchant (có hỗ trợ lọc theo trạng thái)
@@ -49,4 +39,9 @@ public interface OrderService {
     OrderResponse updateOrderStatus(Long merchantId, Long orderId, OrderStatus newStatus);
 
     OrderStatisticsResponse getOrderStatisticsByMerchant(Long merchantId);
+
+    // Thêm method này vào interface
+    RevenueStatisticsResponse getRevenueStatistics(Long merchantId, String timeRange,Integer week,Integer month, Integer quarter,Integer year, int page, int size);
+
+    Page<OrderResponse> getOrdersByDish(Long merchantId, Long dishId,int page, int size);
 }

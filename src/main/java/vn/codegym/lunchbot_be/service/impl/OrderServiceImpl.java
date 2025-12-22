@@ -1,6 +1,10 @@
 package vn.codegym.lunchbot_be.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.codegym.lunchbot_be.dto.request.CheckoutRequest;
@@ -14,7 +18,9 @@ import vn.codegym.lunchbot_be.service.CheckoutService;
 import vn.codegym.lunchbot_be.service.OrderService;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -332,6 +338,149 @@ public class OrderServiceImpl implements OrderService {
 
         return stats;
     }
+
+    // Thêm method này vào class OrderServiceImpl
+    @Override
+    @Transactional(readOnly = true)
+    public RevenueStatisticsResponse getRevenueStatistics(
+            Long merchantId,
+            String timeRange,
+            Integer week,
+            Integer month,
+            Integer quarter,
+            Integer year,
+            int page,
+            int size) {
+
+        LocalDateTime startDate;
+        LocalDateTime endDate = LocalDateTime.now();
+
+        // Nếu không truyền timeRange → mặc định là MONTH (hiện tại)
+        if (timeRange == null || timeRange.trim().isEmpty()) {
+            timeRange = "MONTH";
+        }
+
+        // Nếu không truyền năm → dùng năm hiện tại
+        if (year == null) {
+            year = LocalDate.now().getYear();
+        }
+
+        // ✅ XỬ LÝ LOGIC THEO TỪNG LOẠI THỐNG KÊ
+        switch (timeRange.toUpperCase()) {
+
+            case "WEEK":
+                // ✅ Nếu có truyền week → lấy tuần cụ thể
+                if (week != null && week >= 1 && week <= 53) {
+                    // Tính ngày đầu tiên của tuần cụ thể
+                    LocalDate jan1 = LocalDate.of(year, 1, 1);
+                    // ISO Week: Thứ 2 là bắt đầu tuần
+                    LocalDate firstDayOfWeek = jan1.with(
+                            java.time.temporal.WeekFields.ISO.weekOfYear(), week
+                    ).with(java.time.DayOfWeek.MONDAY);
+
+                    startDate = firstDayOfWeek.atStartOfDay();
+                    endDate = firstDayOfWeek.plusDays(6).atTime(23, 59, 59);
+                } else {
+                    // Mặc định: tuần hiện tại
+                    startDate = LocalDate.now()
+                            .with(java.time.DayOfWeek.MONDAY)
+                            .atStartOfDay();
+                    endDate = LocalDate.now()
+                            .with(java.time.DayOfWeek.SUNDAY)
+                            .atTime(23, 59, 59);
+                }
+                break;
+
+            case "MONTH":
+                // ✅ Nếu có truyền month → lấy tháng cụ thể
+                if (month != null && month >= 1 && month <= 12) {
+                    startDate = LocalDate.of(year, month, 1).atStartOfDay();
+                    // Lấy ngày cuối cùng của tháng
+                    YearMonth yearMonth = YearMonth.of(year, month);
+                    endDate = yearMonth.atEndOfMonth().atTime(23, 59, 59);
+                } else {
+                    // Mặc định: tháng hiện tại
+                    startDate = LocalDate.now()
+                            .withDayOfMonth(1)
+                            .atStartOfDay();
+                    YearMonth yearMonth = YearMonth.now();
+                    endDate = yearMonth.atEndOfMonth().atTime(23, 59, 59);
+                }
+                break;
+
+            case "QUARTER":
+                // ✅ Nếu có truyền quarter → lấy quý cụ thể
+                if (quarter != null && quarter >= 1 && quarter <= 4) {
+                    int firstMonth = (quarter - 1) * 3 + 1;
+                    startDate = LocalDate.of(year, firstMonth, 1).atStartOfDay();
+
+                    int lastMonth = quarter * 3;
+                    YearMonth lastMonthOfQuarter = YearMonth.of(year, lastMonth);
+                    endDate = lastMonthOfQuarter.atEndOfMonth().atTime(23, 59, 59);
+                } else {
+                    // Mặc định: quý hiện tại
+                    LocalDate now = LocalDate.now();
+                    int currentQuarter = (now.getMonthValue() - 1) / 3 + 1;
+                    int firstMonth = (currentQuarter - 1) * 3 + 1;
+                    startDate = LocalDate.of(now.getYear(), firstMonth, 1)
+                            .atStartOfDay();
+
+                    int lastMonth = currentQuarter * 3;
+                    YearMonth lastMonthOfQuarter = YearMonth.of(now.getYear(), lastMonth);
+                    endDate = lastMonthOfQuarter.atEndOfMonth().atTime(23, 59, 59);
+                }
+                break;
+
+            case "YEAR":
+                // ✅ Lấy toàn bộ năm
+                startDate = LocalDate.of(year, 1, 1).atStartOfDay();
+                endDate = LocalDate.of(year, 12, 31).atTime(23, 59, 59);
+                break;
+
+            default:
+                // Mặc định: tháng hiện tại
+                startDate = LocalDate.now()
+                        .withDayOfMonth(1)
+                        .atStartOfDay();
+                YearMonth yearMonth = YearMonth.now();
+                endDate = yearMonth.atEndOfMonth().atTime(23, 59, 59);
+        }
+
+        // ✅ QUERY DATABASE
+        BigDecimal revenue = orderRepository.sumRevenueByDateRange(
+                merchantId, startDate, endDate
+        );
+        if (revenue == null) revenue = BigDecimal.ZERO;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("orderDate").descending());
+        Page<Order> orderPage = orderRepository.findOrdersByDateRange(
+                merchantId, startDate, endDate, pageable
+        );
+
+        Page<OrderResponse> orderResponsePage = orderPage.map(this::mapToOrderResponse);
+
+        // ✅ BUILD RESPONSE
+        return RevenueStatisticsResponse.builder()
+                .totalRevenue(revenue)
+                .totalOrders(orderPage.getTotalElements())
+                .orders(orderResponsePage)
+                .timeRange(timeRange)
+                .startDate(startDate)      // ✅ THÊM để frontend biết khoảng nào
+                .endDate(endDate)
+                .build();
+    }
+
+    @Override
+    public Page<OrderResponse> getOrdersByDish(Long merchantId, Long dishId, int page, int size) {
+        // Query với phân trang
+        Pageable pageable = PageRequest.of(page, size, Sort.by("orderDate").descending());
+        // Lấy danh sách đơn hàng chứa dishId
+        Page<Order> orderPage = orderRepository.findOrdersByDishId(merchantId, dishId, pageable);
+        // Map sang OrderResponse
+        return orderPage.map(this::mapToOrderResponse);
+    }
+
+
     /**
      * Generate order number theo format: ORD-YYYYMMDD-XXX
      * VD: ORD-20231215-001
@@ -397,6 +546,11 @@ public class OrderServiceImpl implements OrderService {
                 .status(order.getStatus())
                 .paymentMethod(order.getPaymentMethod())
                 .paymentStatus(order.getPaymentStatus())
+
+                .customerName(order.getUser().getFullName())           // Lấy từ User entity
+                .customerPhone(order.getUser().getPhone())         // Optional: Lấy phone
+                // ========================================
+
                 .merchantId(order.getMerchant().getId())
                 .merchantName(order.getMerchant().getRestaurantName())
                 .merchantAddress(order.getMerchant().getAddress())
