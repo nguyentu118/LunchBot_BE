@@ -24,11 +24,20 @@ public class AddressRequest {
     @NotBlank(message = "Tỉnh/Thành phố không được để trống")
     private String province;
 
+    // ✅ GHN Province ID
+    private Integer provinceId;
+
     @NotBlank(message = "Quận/Huyện không được để trống")
     private String district;
 
+    // ✅ GHN District ID
+    private Integer districtId;
+
     @NotBlank(message = "Phường/Xã không được để trống")
     private String ward;
+
+    // ✅ GHN Ward Code
+    private String wardCode;
 
     @NotBlank(message = "Địa chỉ cụ thể không được để trống")
     private String street;

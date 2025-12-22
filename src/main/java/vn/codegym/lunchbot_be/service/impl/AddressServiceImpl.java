@@ -23,14 +23,12 @@ public class AddressServiceImpl implements AddressService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AddressResponse> getAllAddressesByUser(String email) {// lay dia chi cua user qua email
+    public List<AddressResponse> getAllAddressesByUser(String email) {
         User user = getUserByEmail(email);
-
         List<Address> addresses = addressRepository.findByUserId(user.getId());
-
         return addresses.stream()
-                .map(this::mapToResponse)// chuyen dia chi entity sang dto
-                .collect(Collectors.toList());// thu thap thanh lis
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -74,7 +72,16 @@ public class AddressServiceImpl implements AddressService {
                 .street(request.getStreet())
                 .building(request.getBuilding())
                 .isDefault(shouldBeDefault)
+                // ✅ Lưu GHN fields
+                .provinceId(request.getProvinceId())
+                .districtId(request.getDistrictId())
+                .wardCode(request.getWardCode())
                 .build();
+
+        System.out.println("💾 Lưu vào DB:");
+        System.out.println("   provinceId: " + address.getProvinceId());
+        System.out.println("   districtId: " + address.getDistrictId());
+        System.out.println("   wardCode: " + address.getWardCode());
 
         Address savedAddress = addressRepository.save(address);
 
@@ -103,11 +110,21 @@ public class AddressServiceImpl implements AddressService {
         address.setStreet(request.getStreet());
         address.setBuilding(request.getBuilding());
 
+        // ✅ Cập nhật GHN fields
+        address.setProvinceId(request.getProvinceId());
+        address.setDistrictId(request.getDistrictId());
+        address.setWardCode(request.getWardCode());
+
         // Xử lý set default
         if (request.getIsDefault() != null && request.getIsDefault()) {
             unsetOtherDefaultAddresses(user.getId());
             address.setIsDefault(true);
         }
+
+        System.out.println("💾 Cập nhật trong DB:");
+        System.out.println("   provinceId: " + address.getProvinceId());
+        System.out.println("   districtId: " + address.getDistrictId());
+        System.out.println("   wardCode: " + address.getWardCode());
 
         Address updatedAddress = addressRepository.save(address);
 
@@ -200,6 +217,7 @@ public class AddressServiceImpl implements AddressService {
 
     /**
      * Map Address entity sang AddressResponse DTO
+     * ✅ Thêm GHN fields
      */
     private AddressResponse mapToResponse(Address address) {
         AddressResponse response = AddressResponse.builder()
@@ -212,6 +230,10 @@ public class AddressServiceImpl implements AddressService {
                 .street(address.getStreet())
                 .building(address.getBuilding())
                 .isDefault(address.getIsDefault())
+                // ✅ Map GHN fields
+                .provinceId(address.getProvinceId())
+                .districtId(address.getDistrictId())
+                .wardCode(address.getWardCode())
                 .build();
 
         // Tạo fullAddress

@@ -79,6 +79,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/categories/**").permitAll()
                         .requestMatchers("/api/cart/**").authenticated()
                         .requestMatchers("/api/coupons/**").permitAll()
+                        .requestMatchers("/api/delivery/**").hasRole("ADMIN")
+                        .requestMatchers("/api/ghn/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .httpBasic(AbstractHttpConfigurer::disable)

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background-color: #dc3545;
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .content h2 {
+            color: #dc3545;
+            font-size: 20px;
+            margin-top: 0;
+        }
+        .info-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .reason-box {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            color: #721c24;
+        }
+        .contact-info {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .contact-info p {
+            margin: 8px 0;
+        }
+        .contact-info strong {
+            color: #dc3545;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #e9ecef;
+        }
+        .divider {
+            border: 0;
+            border-top: 1px solid #e9ecef;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <h1>🚫 Thông báo khóa tài khoản</h1>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+        <h2>Xin chào <span th:text="${partnerName}">Đối tác</span>,</h2>
+
+        <p>Chúng tôi rất tiếc phải thông báo rằng <strong>tài khoản đối tác vận chuyển của bạn đã bị khóa</strong>.</p>
+
+        <div class="info-box">
+            <p><strong>⚠️ Lý do:</strong></p>
+            <p th:text="${reason}">Vi phạm chính sách dịch vụ</p>
+        </div>
+
+        <p>Nếu bạn tin rằng đây là một lỗi hoặc có những thắc mắc về quyết định này, vui lòng liên hệ với chúng tôi ngay.</p>
+
+        <div class="contact-info">
+            <p><strong>📧 Email hỗ trợ:</strong></p>
+            <p th:text="${supportEmail}">support@lunchbot.com</p>
+
+            <p style="margin-top: 15px;"><strong>🕐 Thời gian:</strong></p>
+            <p th:text="${currentDate}">dd/MM/yyyy HH:mm</p>
+        </div>
+
+        <p>Chúng tôi cam kết giải quyết vấn đề này một cách nhanh chóng và công bằng.</p>
+
+        <p>Trân trọng,<br/>
+            <strong th:text="${appName}">LunchBot</strong> Team</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>Đây là email tự động từ hệ thống. Vui lòng không trả lời email này.</p>
+        <p th:text="${appName}">LunchBot</p>
+    </div>
+</div>
+</body>
+</html>

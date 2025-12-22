@@ -1,5 +1,6 @@
 package vn.codegym.lunchbot_be.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import vn.codegym.lunchbot_be.model.enums.ShippingPartnerStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -23,6 +24,9 @@ public class ShippingPartner {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, nullable = false)
+    private String email;
+
     @Column(nullable = false)
     private String name;
 
@@ -31,8 +35,11 @@ public class ShippingPartner {
 
     private String address;
 
-    @Column(precision = 5, scale = 4)
+    @Column(precision = 4, scale = 2)
     private BigDecimal commissionRate; // % per order
+
+    @Column(nullable = false)
+    private Boolean isDefault = false;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -44,6 +51,7 @@ public class ShippingPartner {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "shippingPartner")
+    @OneToMany(mappedBy = "shippingPartner", fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Order> orders = new ArrayList<>();
 }

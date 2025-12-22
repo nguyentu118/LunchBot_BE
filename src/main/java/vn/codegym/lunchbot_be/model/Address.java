@@ -53,4 +53,13 @@ public class Address {
 
     @OneToMany(mappedBy = "shippingAddress")
     private List<Order> orders = new ArrayList<>();
+
+    @Column(name = "province_id")
+    private Integer provinceId; // ID Tỉnh/Thành từ GHN
+
+    @Column(name = "district_id")
+    private Integer districtId; // ID Quận/Huyện từ GHN
+
+    @Column(name = "ward_code")
+    private String wardCode;    // Mã Phường/Xã từ GHN
 }

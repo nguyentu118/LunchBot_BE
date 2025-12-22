@@ -21,6 +21,11 @@ public class AddressResponse {
     private String building;
     private Boolean isDefault;
 
+    // ✅ GHN API fields
+    private Integer provinceId;
+    private Integer districtId;
+    private String wardCode;
+
     // Địa chỉ đầy đủ (ghép tất cả)
     private String fullAddress;
 

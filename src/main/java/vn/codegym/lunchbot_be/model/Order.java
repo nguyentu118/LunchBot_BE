@@ -44,6 +44,9 @@ public class Order {
     @JoinColumn(name = "shipping_partner_id")
     private ShippingPartner shippingPartner;
 
+    @Column(precision = 5, scale = 2)
+    private BigDecimal commissionRate;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "coupon_id")
     private Coupon coupon;

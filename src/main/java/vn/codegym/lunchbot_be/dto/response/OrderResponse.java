@@ -33,6 +33,7 @@ public class OrderResponse {
 
     // ========== ĐỊA CHỈ GIAO HÀNG ==========
     private AddressResponse shippingAddress;
+    private String shippingPartnerName;
 
     // ========== DANH SÁCH MÓN ĂN ==========
     private List<OrderItemDTO> items;
@@ -43,6 +44,7 @@ public class OrderResponse {
     private BigDecimal discountAmount;  // Số tiền giảm giá
     private BigDecimal serviceFee;      // Phí dịch vụ
     private BigDecimal shippingFee;     // Phí vận chuyển
+    private BigDecimal commissionFee;
     private BigDecimal totalAmount;     // Tổng thanh toán
 
     // ========== MÃ GIẢM GIÁ ==========

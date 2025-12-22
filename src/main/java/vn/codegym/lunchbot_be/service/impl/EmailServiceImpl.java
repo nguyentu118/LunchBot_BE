@@ -83,6 +83,58 @@ public class EmailServiceImpl implements EmailService {
     }
 
 
+    @Override
+    @Async
+    public void sendShippingPartnerLockedEmail(String partnerEmail, String partnerName, String reason) {
+        try {
+            Context context = new Context();
+            context.setVariable("partnerName", partnerName);
+            context.setVariable("reason", reason != null ? reason : "Vi phạm chính sách dịch vụ");
+            context.setVariable("appName", appName);
+            context.setVariable("supportEmail", supportEmail);
+            context.setVariable("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+
+            log.info("🔴 Đang gửi email LOCKED từ template: emails/shipping-partner-locked");
+            String htmlContent = templateEngine.process("emails/shipping-partner-locked", context);
+
+            sendHtmlEmail(partnerEmail,
+                    "🚫 Thông báo khóa tài khoản đối tác vận chuyển",
+                    htmlContent);
+
+            log.info("✅ Shipping partner LOCKED email sent to: {}", partnerEmail);
+
+        } catch (Exception e) {
+            log.error("❌ Failed to send shipping partner LOCKED email to {}: {}", partnerEmail, e.getMessage(), e);
+        }
+    }
+
+    @Override
+    @Async
+    public void sendShippingPartnerUnlockedEmail(String partnerEmail, String partnerName, String reason) {
+        try {
+            Context context = new Context();
+            context.setVariable("partnerName", partnerName);
+            context.setVariable("reason", reason != null ? reason : "Tài khoản đã được mở khóa");
+            context.setVariable("appName", appName);
+            context.setVariable("appUrl", appUrl);
+            context.setVariable("supportEmail", supportEmail);
+            context.setVariable("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+
+            log.info("🟢 Đang gửi email UNLOCKED từ template: emails/shipping-partner-unlocked");
+            String htmlContent = templateEngine.process("emails/shipping-partner-unlocked", context);
+
+            sendHtmlEmail(partnerEmail,
+                    "✅ Thông báo mở khóa tài khoản đối tác vận chuyển",
+                    htmlContent);
+
+            log.info("✅ Shipping partner UNLOCKED email sent to: {}", partnerEmail);
+
+        } catch (Exception e) {
+            log.error("❌ Failed to send shipping partner UNLOCKED email to {}: {}", partnerEmail, e.getMessage(), e);
+        }
+    }
+
+
     @Async
     public void sendRegistrationSuccessEmail(String to, String fullName, String restaurantName, String loginUrl, boolean isMerchant) {
         MimeMessage mimeMessage = mailSender.createMimeMessage();

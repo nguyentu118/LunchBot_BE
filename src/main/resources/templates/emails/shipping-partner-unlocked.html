@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        /* Header xanh lá cây - khác biệt rõ ràng từ template locked (đỏ) */
+        .header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .content h2 {
+            color: #28a745;
+            font-size: 20px;
+            margin-top: 0;
+        }
+        .success-box {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .reason-box {
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #eee;
+        }
+        .action-box {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #fcfcfc;
+            border-radius: 8px;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white !important;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+        }
+        .contact-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            color: #666;
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            border-top: 1px solid #eee;
+        }
+        hr {
+            border: 0;
+            border-top: 1px solid #eee;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>✅ Mở Khóa Thành Công</h1>
+    </div>
+
+    <div class="content">
+        <h2>Chào <span th:text="${partnerName}">Đối tác</span>,</h2>
+
+        <div class="success-box">
+            <p><strong>🎉 Chúng tôi vui mừng thông báo rằng tài khoản đối tác vận chuyển của bạn đã được mở khóa!</strong></p>
+            <p style="margin: 10px 0 0 0; color: #155724;"><em>Bạn giờ có thể tiếp tục hoạt động bình thường.</em></p>
+        </div>
+
+        <div class="reason-box">
+            <p><strong>📌 Lý do:</strong></p>
+            <p th:text="${reason}">Tài khoản đã được xác minh và phê duyệt hoạt động trở lại.</p>
+        </div>
+
+        <p>Bây giờ bạn có thể đăng nhập lại vào hệ thống và tiếp tục nhận các đơn hàng vận chuyển mới.</p>
+
+        <div class="action-box">
+            <p style="margin-bottom: 20px;"><strong>🔓 Đăng nhập ngay:</strong></p>
+            <a th:href="${appUrl}" class="cta-button">Truy cập tài khoản</a>
+        </div>
+
+        <p>Nếu bạn gặp bất kỳ vấn đề nào khi đăng nhập hoặc cần hỗ trợ thêm, đừng ngần ngại liên hệ với chúng tôi.</p>
+
+        <div class="contact-info">
+            <p><strong>📧 Email hỗ trợ:</strong> <span th:text="${supportEmail}">support@lunchbot.com</span></p>
+            <p><strong>🕐 Thời gian thực hiện:</strong> <span th:text="${currentDate}">dd/MM/yyyy HH:mm</span></p>
+        </div>
+
+        <p>Trân trọng,<br/><strong>Đội ngũ LunchBot</strong></p>
+    </div>
+
+    <div class="footer">
+        <p>© 2024 LunchBot System. Tất cả các quyền được bảo lưu.</p>
+        <p>Đây là email tự động, vui lòng không phản hồi email này.</p>
+    </div>
+</div>
+</body>
+</html>

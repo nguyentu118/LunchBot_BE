@@ -32,6 +32,7 @@ public class OrderServiceImpl implements OrderService {
     private final CouponRepository couponRepository;
     private final CheckoutService checkoutService;
     private final AddressService addressService;
+    private final ShippingPartnerRepository shippingPartnerRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -56,7 +57,7 @@ public class OrderServiceImpl implements OrderService {
 
         List<CartItem> itemsToOrder;
 
-        // ✅ SỬA: Kiểm tra dishIds trước
+        // Kiểm tra dishIds trước
         if (request.getDishIds() == null || request.getDishIds().isEmpty()) {
             throw new RuntimeException("Vui lòng chọn món ăn để đặt hàng");
         }
@@ -70,7 +71,7 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Không tìm thấy món được chọn trong giỏ hàng");
         }
 
-        // ✅ SỬA: Validate tất cả món phải cùng 1 merchant
+        // Validate tất cả món phải cùng 1 merchant
         long merchantCount = itemsToOrder.stream()
                 .map(item -> item.getDish().getMerchant().getId())
                 .distinct()
@@ -91,7 +92,14 @@ public class OrderServiceImpl implements OrderService {
         // 3. Lấy merchant từ cart
         Merchant merchant = itemsToOrder.get(0).getDish().getMerchant();
 
-        // 4. Tính toán giá
+        // 4. ✅ LẤY SHIPPING PARTNER MẶC ĐỊNH
+        ShippingPartner defaultShippingPartner = shippingPartnerRepository.findAll().stream()
+                .filter(ShippingPartner::getIsDefault)
+                .filter(partner -> !partner.getIsLocked()) // Chỉ lấy partner không bị khóa
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đối tác vận chuyển mặc định"));
+
+        // 5. Tính toán giá
         BigDecimal itemsTotal = itemsToOrder.stream()
                 .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -99,7 +107,25 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal serviceFee = checkoutService.calculateServiceFee(itemsTotal);
         BigDecimal shippingFee = checkoutService.calculateShippingFee(shippingAddress.getProvince());
 
-        // 5. Xử lý coupon (nếu có)
+        // 6. ✅ TÍNH PHÍ HOA HỒNG CHO MERCHANT (dựa trên merchant commission rate)
+        BigDecimal merchantCommissionRate = merchant.getCommissionRate() != null
+                ? merchant.getCommissionRate()
+                : BigDecimal.ZERO;
+        BigDecimal merchantCommissionFee = itemsTotal
+                .multiply(merchantCommissionRate)
+                .divide(BigDecimal.valueOf(100), 2, BigDecimal.ROUND_HALF_UP);
+
+        // 7. ✅ TÍNH PHÍ HOA HỒNG CHO SHIPPING PARTNER (dựa trên shipping partner commission rate)
+        // Phí này được tính trên shipping fee
+        BigDecimal shipperCommissionRate = defaultShippingPartner.getCommissionRate() != null
+                ? defaultShippingPartner.getCommissionRate()
+                : BigDecimal.ZERO;
+
+        BigDecimal shipperCommissionFee = shippingFee
+                .multiply(shipperCommissionRate)
+                .divide(BigDecimal.valueOf(100), 2, BigDecimal.ROUND_HALF_UP);
+
+        // 8. Xử lý coupon (nếu có)
         BigDecimal discountAmount = BigDecimal.ZERO;
         Coupon coupon = null;
 
@@ -129,18 +155,20 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
-        // 6. Tính tổng thanh toán
+        // 9. Tính tổng thanh toán
         BigDecimal totalAmount = itemsTotal
                 .subtract(discountAmount)
                 .add(serviceFee)
                 .add(shippingFee);
 
-        // 7. Tạo order
+        // 10. Tạo order
         Order order = Order.builder()
                 .orderNumber(generateOrderNumber())
                 .user(user)
                 .merchant(merchant)
                 .shippingAddress(shippingAddress)
+                .shippingPartner(defaultShippingPartner) // ✅ Gán shipping partner mặc định
+                .commissionRate(defaultShippingPartner.getCommissionRate()) // ✅ Lưu snapshot commission rate
                 .coupon(coupon)
                 .status(OrderStatus.PENDING)
                 .paymentMethod(request.getPaymentMethod())
@@ -150,41 +178,42 @@ public class OrderServiceImpl implements OrderService {
                 .serviceFee(serviceFee)
                 .shippingFee(shippingFee)
                 .totalAmount(totalAmount)
+                .commissionFee(shipperCommissionFee) // ✅ Lưu phí hoa hồng cho shipper
                 .notes(request.getNotes())
                 .orderDate(LocalDateTime.now())
                 .orderItems(new ArrayList<>())
                 .build();
 
-        // 8. Tạo order items từ cart items - ✅ LƯU SNAPSHOT
+        // 11. Tạo order items từ cart items - Lưu SNAPSHOT
         for (CartItem cartItem : itemsToOrder) {
             Dish dish = cartItem.getDish();
             String firstImage = extractFirstImageUrl(dish.getImagesUrls());
 
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
-                    .dishId(dish.getId())  // ✅ Chỉ lưu ID
-                    .dishName(dish.getName())  // ✅ Snapshot tên
-                    .dishImage(firstImage)  // ✅ Snapshot ảnh
+                    .dishId(dish.getId())
+                    .dishName(dish.getName())
+                    .dishImage(firstImage)
                     .quantity(cartItem.getQuantity())
                     .unitPrice(cartItem.getPrice())
                     .totalPrice(cartItem.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())))
-                    .merchantId(merchant.getId())  // ✅ Lưu merchant info
+                    .merchantId(merchant.getId())
                     .merchantName(merchant.getRestaurantName())
                     .build();
             order.getOrderItems().add(orderItem);
             dish.incrementOrderCount();
         }
 
-        // 9. Tăng usedCount cho coupon (nếu có)
+        // 12. Tăng usedCount cho coupon (nếu có)
         if (coupon != null) {
             coupon.incrementUsedCount();
             couponRepository.save(coupon);
         }
 
-        // 10. Lưu order
+        // 13. Lưu order
         Order savedOrder = orderRepository.save(order);
 
-        // 11. Xóa các món đã đặt khỏi giỏ hàng
+        // 14. Xóa các món đã đặt khỏi giỏ hàng
         for (CartItem item : itemsToOrder) {
             cart.getCartItems().remove(item);
         }
@@ -329,12 +358,14 @@ public class OrderServiceImpl implements OrderService {
                 .merchantAddress(order.getMerchant().getAddress())
                 .merchantPhone(order.getMerchant().getPhone())
                 .shippingAddress(addressResponse)
+                .shippingPartnerName(order.getShippingPartner() != null ? order.getShippingPartner().getName() : null) // ✅ Thêm tên shipper
                 .items(items)
                 .totalItems(totalItems)
                 .itemsTotal(order.getItemsTotal())
                 .discountAmount(order.getDiscountAmount())
                 .serviceFee(order.getServiceFee())
                 .shippingFee(order.getShippingFee())
+                .commissionFee(order.getCommissionFee()) // ✅ Thêm phí hoa hồng shipper
                 .totalAmount(order.getTotalAmount())
                 .couponCode(order.getCoupon() != null ? order.getCoupon().getCode() : null)
                 .notes(order.getNotes())
@@ -347,12 +378,11 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private OrderItemDTO mapToOrderItemDTO(OrderItem item) {
-        // Không cần hàm extractFirstImageUrl nữa vì dishImage trong DB đã lưu link ảnh rồi
         return OrderItemDTO.builder()
                 .id(item.getId())
-                .dishId(item.getDishId())       // Lấy từ snapshot
-                .dishName(item.getDishName())   // Lấy từ snapshot
-                .dishImage(item.getDishImage()) // Lấy từ snapshot
+                .dishId(item.getDishId())
+                .dishName(item.getDishName())
+                .dishImage(item.getDishImage())
                 .quantity(item.getQuantity())
                 .unitPrice(item.getUnitPrice())
                 .totalPrice(item.getTotalPrice())
