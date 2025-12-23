@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.codegym.lunchbot_be.dto.request.CheckoutRequest;
 import vn.codegym.lunchbot_be.dto.response.*;
+import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
 import vn.codegym.lunchbot_be.model.*;
 import vn.codegym.lunchbot_be.model.enums.OrderStatus;
 import vn.codegym.lunchbot_be.model.enums.PaymentStatus;
@@ -37,8 +38,8 @@ public class OrderServiceImpl implements OrderService {
     private final AddressRepository addressRepository;
     private final CouponRepository couponRepository;
     private final CheckoutService checkoutService;
-    private final AddressService addressService;
     private final ShippingPartnerRepository shippingPartnerRepository;
+    private final ShippingServiceImpl shippingService;
 
     @Override
     @Transactional(readOnly = true)
@@ -54,6 +55,10 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse createOrder(String email, CheckoutRequest request) {
+        Address address = addressRepository.findById(request.getAddressId())
+                .orElseThrow(() -> new ResourceNotFoundException("Address not found"));
+
+        Long actualShippingFee = shippingService.calculateGhnFee(address);
         // 1. Validate cart
         checkoutService.validateCart(email);
 
@@ -110,7 +115,7 @@ public class OrderServiceImpl implements OrderService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal serviceFee = checkoutService.calculateServiceFee(itemsTotal);
-        BigDecimal shippingFee = checkoutService.calculateShippingFee(shippingAddress.getProvince());
+        BigDecimal shippingFee = BigDecimal.valueOf(actualShippingFee);
 
         // 6. ✅ TÍNH PHÍ HOA HỒNG CHO MERCHANT (dựa trên merchant commission rate)
         BigDecimal merchantCommissionRate = merchant.getCommissionRate() != null

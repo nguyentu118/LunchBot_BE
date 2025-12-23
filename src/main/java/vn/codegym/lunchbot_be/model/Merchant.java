@@ -38,6 +38,9 @@ public class Merchant {
 
     private String address;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     @Column(unique = true)
     private String phone;
 
@@ -88,6 +91,7 @@ public class Merchant {
     private List<Dish> dishes = new ArrayList<>();
 
     @OneToMany(mappedBy = "merchant")
+    @JsonIgnore
     private List<Order> orders = new ArrayList<>();
 
     @OneToMany(mappedBy = "merchant", cascade = CascadeType.ALL, orphanRemoval = true)

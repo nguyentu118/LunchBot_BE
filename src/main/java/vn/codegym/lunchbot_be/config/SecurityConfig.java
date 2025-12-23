@@ -69,7 +69,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/public/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "api/dishes/suggested",
                                 "/api/dishes/{dishId}",
+                                "/api/merchants/profile/{merchantId}",
                                 "/api/dishes/{dishId}/related",
+                                "api/dishes/list",
+                                "api/merchants/profile/{id}/dishes",
                                 "/api/merchants/popular").permitAll()
                         .requestMatchers("/api/merchants/current/id").authenticated()
                         .requestMatchers("/api/cart/**").authenticated()

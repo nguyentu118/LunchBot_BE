@@ -53,7 +53,6 @@ public class MerchantController {
     }
 
     @GetMapping("/profile")
-    // Authentication object được inject tự động bởi Spring Security
     public ResponseEntity<MerchantResponseDTO> getMerchantProfile(Authentication authentication) {
         // 1. Lấy email của Merchant đang đăng nhập từ Security Context
         String merchantEmail = authentication.getName();
@@ -209,11 +208,11 @@ public class MerchantController {
     @GetMapping("/{merchantId}/statistics/revenue")
     public ResponseEntity<RevenueStatisticsResponse> getRevenueStats(
             @PathVariable Long merchantId,
-            @RequestParam(required = false) String timeRange,    // WEEK, MONTH, QUARTER, YEAR
-            @RequestParam(required = false) Integer week,        // Tuần (1-53)
-            @RequestParam(required = false) Integer month,       // Tháng (1-12)
-            @RequestParam(required = false) Integer quarter,     // Quý (1-4)
-            @RequestParam(required = false) Integer year,        // Năm (VD: 2024)
+            @RequestParam(required = false) String timeRange,
+            @RequestParam(required = false) Integer week,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer quarter,
+            @RequestParam(required = false) Integer year,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
@@ -287,5 +286,48 @@ public class MerchantController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(null);
         }
+
+    @GetMapping("/profile/{id}")
+    public ResponseEntity<?> getMerchantPublicInfo(@PathVariable Long id) {
+        try {
+            MerchantProfileResponse merchant = merchantService.getMerchantById(id);
+            return ResponseEntity.ok(merchant);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Không tìm thấy thông tin cửa hàng"));
+        }
+    }
+
+    @PatchMapping("/my-profile/avatar")
+    @PreAuthorize("hasRole('MERCHANT')")
+    public ResponseEntity<?> updateAvatar(
+            @RequestBody Map<String, String> payload,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        try {
+            String avatarUrl = payload.get("avatarUrl");
+            Long userId = userDetails.getId();
+
+            // Gọi service xử lý
+            merchantService.updateMerchantAvatar(userId, avatarUrl);
+
+            return ResponseEntity.ok(Map.of("message", "Cập nhật ảnh đại diện thành công", "url", avatarUrl));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/my-profile")
+    @PreAuthorize("hasRole('MERCHANT')")
+    public ResponseEntity<?> getMyProfile(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+        // Tìm merchant dựa trên userId của người đang login
+        Long userId = userDetails.getId();
+        Merchant merchant = merchantService.findByUserId(userId);
+        return ResponseEntity.ok(merchant);
+    }
+
+    @GetMapping("/profile/{id}/dishes")
+    public ResponseEntity<List<DishResponse>> getDishesByMerchantId(@PathVariable Long id) {
+        List<DishResponse> dishes = merchantService.getDishesByMerchantId(id);
+        return ResponseEntity.ok(dishes);
     }
 }

@@ -1,5 +1,6 @@
 package vn.codegym.lunchbot_be.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import vn.codegym.lunchbot_be.model.enums.Gender;
 import vn.codegym.lunchbot_be.model.enums.UserRole;
 import jakarta.persistence.*;
@@ -67,6 +68,7 @@ public class User {
 
     // Relationships
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Address> addresses = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)

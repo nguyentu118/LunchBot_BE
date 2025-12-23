@@ -13,6 +13,7 @@ import vn.codegym.lunchbot_be.model.Merchant; // 💡 THÊM IMPORT
 public class MerchantResponseDTO {
     private Long id; // 💡 THÊM TRƯỜNG ID
     private String restaurantName;
+    private String avatarUrl;
     private String address;
     private String email;
     private String phone;
@@ -26,6 +27,7 @@ public class MerchantResponseDTO {
         }
         return MerchantResponseDTO.builder()
                 .id(merchant.getId())
+                .avatarUrl(merchant.getAvatarUrl())
                 .restaurantName(merchant.getRestaurantName()) // Giả định Merchant.name = restaurantName
                 .address(merchant.getAddress())
                 .phone(merchant.getPhone())
