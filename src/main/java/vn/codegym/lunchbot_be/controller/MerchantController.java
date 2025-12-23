@@ -73,7 +73,7 @@ public class MerchantController {
         return ResponseEntity.ok(updatedMerchant);
     }
 
-     //GET /api/merchants/popular?limit=8
+    //GET /api/merchants/popular?limit=8
     @GetMapping("/popular")
     public ResponseEntity<List<PopularMerchantDto>> getPopularMerchants(
             @RequestParam(defaultValue = "8") int limit
@@ -161,6 +161,7 @@ public class MerchantController {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
+
     /**
      * PUT /api/merchants/orders/{orderId}/status?status=PROCESSING
      */
@@ -203,6 +204,7 @@ public class MerchantController {
                     .body(Map.of("message", "Không thể tải thống kê: " + e.getMessage()));
         }
     }
+
     @GetMapping("/{merchantId}/statistics/revenue")
     public ResponseEntity<RevenueStatisticsResponse> getRevenueStats(
             @PathVariable Long merchantId,
@@ -227,7 +229,7 @@ public class MerchantController {
             @PathVariable Long dishId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @AuthenticationPrincipal UserDetailsImpl userDetails){
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
         try {
             Long userId = userDetails.getId();
             Long merchantId = merchantService.getMerchantIdByUserId(userId);
@@ -238,12 +240,52 @@ public class MerchantController {
 
             Page<OrderResponse> ordersPage = orderService.getOrdersByDish(merchantId, dishId, page, size);
             return ResponseEntity.ok(ordersPage);
-    }catch (Exception e) {
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Lỗi khi lấy đơn hàng theo món ăn: " + e.getMessage()));
         }
     }
 
+    @GetMapping("/my-customers")
+    @PreAuthorize("hasRole('MERCHANT')")
+    public ResponseEntity<?> getMyCustomers(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+        try {
+            Long userId = userDetails.getId();
+            Long merchantId = merchantService.getMerchantIdByUserId(userId);
+            List<UserResponseDTO> customers = orderService.getCustomerByMerchant(merchantId);
+            return ResponseEntity.ok(customers);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+
+    }
+
+    @GetMapping("/customers/{userId}/orders")
+    @PreAuthorize("hasRole('MERCHANT')")
+    public ResponseEntity<?> getOrdersByCustomer(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        try {
+            Long merchantId = merchantService.getMerchantIdByUserId(userId);
+            List<OrderResponse> orders = orderService.getOrdersByCustomerForMerchant(userId, merchantId);
+            return ResponseEntity.ok(orders);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+    @GetMapping("/coupons/{couponId}/statistics")
+    @PreAuthorize("hasRole('MERCHANT')")
+    public ResponseEntity<CouponStatisticsResponse> getCouponStatistics(
+            @PathVariable Long couponId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        try {
+            Long userId = userDetails.getId();
+            Long merchantId = merchantService.getMerchantIdByUserId(userId);
+            CouponStatisticsResponse response = orderService.getCouponStatistics(merchantId, couponId);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
 
     @GetMapping("/profile/{id}")
     public ResponseEntity<?> getMerchantPublicInfo(@PathVariable Long id) {

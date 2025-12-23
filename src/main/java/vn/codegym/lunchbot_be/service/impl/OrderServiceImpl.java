@@ -52,7 +52,6 @@ public class OrderServiceImpl implements OrderService {
     public CheckoutResponse applyDiscount(String email, String couponCode) {
         return checkoutService.applyDiscount(email, couponCode);
     }
-
     @Override
     @Transactional
     public OrderResponse createOrder(String email, CheckoutRequest request) {
@@ -514,6 +513,72 @@ public class OrderServiceImpl implements OrderService {
         return orderPage.map(this::mapToOrderResponse);
     }
 
+    @Override
+    public List<UserResponseDTO> getCustomerByMerchant(Long merchantId) {
+        List<User> customers = orderRepository.findDistinctCustomersByMerchantId(merchantId);
+
+        return customers.stream()
+                .map(user -> {
+                    // Logic tìm địa chỉ mặc định hoặc địa chỉ đầu tiên
+                    String defaultAddress = user.getAddresses().stream()
+                            .filter(Address::getIsDefault)
+                            .findFirst()
+                            .map(addr -> buildAddressResponse(addr).buildFullAddress())
+                            .orElse(user.getAddresses().isEmpty() ? "Chưa có địa chỉ" : buildAddressResponse(user.getAddresses().get(0)).buildFullAddress());
+
+                    return UserResponseDTO.builder()
+                            .id(user.getId())
+                            .fullName(user.getFullName())
+                            .email(user.getEmail())
+                            .phone(user.getPhone())
+                            .dateOfBirth(user.getDateOfBirth())
+                            .gender(user.getGender())
+                            .shippingAddress(defaultAddress) // Truyền String vào đây
+                            .build();
+                }) // Thiếu dấu đóng ngoặc nhọn và ngoặc tròn ở đây trong code cũ của bạn
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<OrderResponse> getOrdersByCustomerForMerchant(Long UserId, Long merchantId) {
+        List<Order> orders = orderRepository.findByUserIdAndMerchantId(UserId, merchantId);
+
+        return orders.stream()
+                .sorted(Comparator.comparing(Order::getOrderDate).reversed())//sắp xếp theo ngày mới nhất
+                .map(this::mapToOrderResponse)//map order to orderResponse
+                .collect(Collectors.toList());//collect to list
+    }
+
+    @Override
+    public CouponStatisticsResponse getCouponStatistics(Long merchantId, Long couponId) {
+        // Lấy danh sách đơn hàng đã sử dụng coupon này tại merchant
+        List<Order> orders = orderRepository.findByCouponIdAndMerchantId(couponId, merchantId);
+        // Lấy thông tin coupon
+        Coupon coupon = couponRepository.findById(couponId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy coupon"));
+        // Tính toan thong ke
+        BigDecimal totalRevenue = orders.stream()
+                .filter(order -> order.getStatus() == OrderStatus.COMPLETED)
+                .map(Order::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        //tong so tien da giam cho khach hang
+        BigDecimal totalDiscount= orders.stream()
+                .map(Order::getDiscountAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // danh sach don hang
+        List<OrderResponse> orderResponses = orders.stream()
+                .map(this::mapToOrderResponse)
+                .collect(Collectors.toList());
+        return CouponStatisticsResponse.builder()
+                .couponId(coupon.getId())
+                .couponCode(coupon.getCode())
+                .totalOrders((long) orders.size())
+                .totalRevenue(totalRevenue)
+                .totalDiscountGiven(totalDiscount)
+                .orders(orderResponses)
+                .build();
+    }
+
 
     /**
      * Generate order number theo format: ORD-YYYYMMDD-XXX
@@ -649,5 +714,19 @@ public class OrderServiceImpl implements OrderService {
         if (current == OrderStatus.COMPLETED || current == OrderStatus.CANCELLED) {
             throw new RuntimeException("Không thể cập nhật đơn hàng đã kết thúc");
         }
+    }
+
+    private AddressResponse buildAddressResponse(Address addr) {
+        return AddressResponse.builder()
+                .id(addr.getId())
+                .contactName(addr.getContactName())
+                .phone(addr.getPhone())
+                .province(addr.getProvince())
+                .district(addr.getDistrict())
+                .ward(addr.getWard())
+                .street(addr.getStreet())
+                .building(addr.getBuilding())
+                .isDefault(addr.getIsDefault())
+                .build();
     }
 }

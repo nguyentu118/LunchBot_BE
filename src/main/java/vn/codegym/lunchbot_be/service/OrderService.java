@@ -2,10 +2,7 @@ package vn.codegym.lunchbot_be.service;
 
 import org.springframework.data.domain.Page;
 import vn.codegym.lunchbot_be.dto.request.CheckoutRequest;
-import vn.codegym.lunchbot_be.dto.response.CheckoutResponse;
-import vn.codegym.lunchbot_be.dto.response.OrderResponse;
-import vn.codegym.lunchbot_be.dto.response.OrderStatisticsResponse;
-import vn.codegym.lunchbot_be.dto.response.RevenueStatisticsResponse;
+import vn.codegym.lunchbot_be.dto.response.*;
 import vn.codegym.lunchbot_be.model.enums.OrderStatus;
 
 import java.util.List;
@@ -44,4 +41,10 @@ public interface OrderService {
     RevenueStatisticsResponse getRevenueStatistics(Long merchantId, String timeRange,Integer week,Integer month, Integer quarter,Integer year, int page, int size);
 
     Page<OrderResponse> getOrdersByDish(Long merchantId, Long dishId,int page, int size);
+
+    List<UserResponseDTO> getCustomerByMerchant(Long merchantId);
+
+    List<OrderResponse> getOrdersByCustomerForMerchant(Long UserId, Long merchantId);
+
+    CouponStatisticsResponse getCouponStatistics(Long merchantId, Long couponId);
 }

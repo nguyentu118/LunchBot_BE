@@ -6,7 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.web.servlet.tags.form.SelectTag;
 import vn.codegym.lunchbot_be.model.Order;
+import vn.codegym.lunchbot_be.model.User;
 import vn.codegym.lunchbot_be.model.enums.OrderStatus;
 
 import java.math.BigDecimal;
@@ -16,18 +18,23 @@ import java.util.List;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByUserId(Long userId);
+
     Page<Order> findByUserId(Long userId, Pageable pageable);
 
     List<Order> findByMerchantId(Long merchantId);
+
     Page<Order> findByMerchantId(Long merchantId, Pageable pageable);
 
     List<Order> findByStatus(OrderStatus status);
+
     Page<Order> findByStatus(OrderStatus status, Pageable pageable);
 
     List<Order> findByUserIdAndStatus(Long userId, OrderStatus status);
+
     List<Order> findByMerchantIdAndStatus(Long merchantId, OrderStatus status);
 
     Long countByMerchantId(Long merchantId);
+
     Long countByMerchantIdAndStatus(Long merchantId, Enum status);
 
     @Query("SELECT o FROM Order o WHERE o.orderNumber LIKE %:keyword% " +
@@ -87,4 +94,15 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("dishId") Long dishId,
             Pageable pageable
     );
+
+    // 1. Lấy danh sách khách hàng DUY NHẤT đã từng đặt hàng tại Merchant này
+    @Query("SELECT DISTINCT o.user FROM Order o WHERE o.merchant.id = :merchantId")
+    List<User> findDistinctCustomersByMerchantId(@Param("merchantId") Long merchantId);
+
+    // 2. Lấy danh sách đơn hàng của một khách hàng cụ thể tại một Merchant cụ thể
+    List<Order> findByUserIdAndMerchantId(Long userId, Long merchantId);
+
+    @Query("SELECT o FROM Order o WHERE o.coupon.id = :couponId AND o.merchant.id = :merchantId ORDER BY o.orderDate DESC")
+    List<Order> findByCouponIdAndMerchantId(@Param("couponId") Long couponId, @Param("merchantId") Long merchantId);
 }
+

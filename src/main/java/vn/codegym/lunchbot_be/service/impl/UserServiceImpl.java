@@ -105,16 +105,16 @@ public class UserServiceImpl {
                                 user.getAddresses().get(0).getStreet() // Lấy địa chỉ đầu tiên nếu không có mặc định
                 );
 
-        // Chuyển đổi sang DTO
-        UserResponseDTO dto = new UserResponseDTO();
-        dto.setEmail(user.getEmail());
-        dto.setPhone(user.getPhone());
-        dto.setFullName(user.getFullName());
-        dto.setDateOfBirth(user.getDateOfBirth());
-        dto.setGender(user.getGender());
-        dto.setShippingAddress(defaultAddress);
 
-        return dto;
+        return UserResponseDTO.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .phone(user.getPhone())
+                .dateOfBirth(user.getDateOfBirth())
+                .gender(user.getGender())
+                .shippingAddress(defaultAddress)
+                .build();
     }
     // Thêm phương thức mới để chỉ lấy thông tin cần cho Header
     public UserMeResponse getHeaderUserInfo(String email) {
