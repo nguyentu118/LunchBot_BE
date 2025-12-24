@@ -7,10 +7,13 @@ import vn.codegym.lunchbot_be.dto.request.AddressRequest;
 import vn.codegym.lunchbot_be.dto.response.AddressResponse;
 import vn.codegym.lunchbot_be.model.Address;
 import vn.codegym.lunchbot_be.model.User;
+import vn.codegym.lunchbot_be.model.enums.OrderStatus;
 import vn.codegym.lunchbot_be.repository.AddressRepository;
+import vn.codegym.lunchbot_be.repository.OrderRepository;
 import vn.codegym.lunchbot_be.repository.UserRepository;
 import vn.codegym.lunchbot_be.service.AddressService;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,12 +23,13 @@ public class AddressServiceImpl implements AddressService {
 
     private final AddressRepository addressRepository;
     private final UserRepository userRepository;
+    private final OrderRepository orderRepository;
 
     @Override
     @Transactional(readOnly = true)
     public List<AddressResponse> getAllAddressesByUser(String email) {
         User user = getUserByEmail(email);
-        List<Address> addresses = addressRepository.findByUserId(user.getId());
+        List<Address> addresses = addressRepository.findByUserIdAndNotDeleted(user.getId());
         return addresses.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -53,7 +57,7 @@ public class AddressServiceImpl implements AddressService {
         User user = getUserByEmail(email);
 
         // Nếu đây là địa chỉ đầu tiên, tự động set làm mặc định
-        Long addressCount = addressRepository.countByUserId(user.getId());
+        Long addressCount = addressRepository.countActiveAddressesByUserId(user.getId());
         boolean shouldBeDefault = (addressCount == 0) ||
                 (request.getIsDefault() != null && request.getIsDefault());
 
@@ -139,18 +143,24 @@ public class AddressServiceImpl implements AddressService {
         Address address = addressRepository.findById(addressId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ"));
 
-        // Kiểm tra quyền sở hữu
         if (!address.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("Bạn không có quyền xóa địa chỉ này");
         }
 
+        // ✅ SOFT DELETE - Chỉ đánh dấu là đã xóa, KHÔNG XÓA THẬT
+        address.setDeletedAt(LocalDateTime.now());
+
         boolean wasDefault = address.getIsDefault();
-
-        addressRepository.delete(address);
-
-        // Nếu xóa địa chỉ mặc định, tự động set địa chỉ khác làm mặc định
         if (wasDefault) {
-            List<Address> remainingAddresses = addressRepository.findByUserId(user.getId());
+            address.setIsDefault(false);
+        }
+
+        // ⚠️ LƯU lại thay vì DELETE
+        addressRepository.save(address);
+
+        // Tự động set địa chỉ khác làm mặc định nếu xóa địa chỉ mặc định
+        if (wasDefault) {
+            List<Address> remainingAddresses = addressRepository.findByUserIdAndNotDeleted(user.getId());
             if (!remainingAddresses.isEmpty()) {
                 Address firstAddress = remainingAddresses.get(0);
                 firstAddress.setIsDefault(true);
@@ -187,7 +197,7 @@ public class AddressServiceImpl implements AddressService {
     public AddressResponse getDefaultAddress(String email) {
         User user = getUserByEmail(email);
 
-        return addressRepository.findByUserIdAndIsDefault(user.getId(), true)
+        return addressRepository.findDefaultAddressByUserId(user.getId())
                 .map(this::mapToResponse)
                 .orElse(null);
     }
@@ -206,7 +216,7 @@ public class AddressServiceImpl implements AddressService {
      * Bỏ default của tất cả địa chỉ khác
      */
     private void unsetOtherDefaultAddresses(Long userId) {
-        List<Address> addresses = addressRepository.findByUserId(userId);
+        List<Address> addresses = addressRepository.findByUserIdAndNotDeleted(userId);
         addresses.forEach(addr -> {
             if (addr.getIsDefault()) {
                 addr.setIsDefault(false);

@@ -7,8 +7,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.codegym.lunchbot_be.dto.request.DishCreateRequest;
+import vn.codegym.lunchbot_be.dto.request.DishSearchRequest;
 import vn.codegym.lunchbot_be.dto.response.DishDetailResponse;
 import vn.codegym.lunchbot_be.dto.response.DishDiscountResponse;
+import vn.codegym.lunchbot_be.dto.response.DishSearchResponse;
 import vn.codegym.lunchbot_be.dto.response.SuggestedDishResponse;
 import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
 import vn.codegym.lunchbot_be.model.Category;
@@ -212,6 +214,41 @@ public class DishServiceImpl implements DishService {
     public Page<Dish> searchDishes(Long merchantId, String keyword, Long categoryId,
                                    BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
         return dishRepository.searchDishes(merchantId, keyword, categoryId, minPrice, maxPrice, pageable);
+    }
+
+    @Override
+    public List<DishSearchResponse> quickSearchDishes(String name, String category) {
+        List<Dish> dishes = dishRepository.searchDishes(name, category);
+        return dishes.stream()
+                .map(this::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<DishSearchResponse> searchDishes(DishSearchRequest request) {
+        Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
+
+        Page<Dish> dishes = dishRepository.searchDishesWithFilters(
+                request.getName(),
+                request.getCategoryName(),
+                request.getMinPrice(),
+                request.getMaxPrice(),
+                request.getIsRecommended(),
+                pageable
+        );
+
+        return dishes.map(this::toResponseDTO);
+    }
+
+    public DishSearchResponse toResponseDTO(Dish dish) {
+        return DishSearchResponse.builder()
+                .id(dish.getId())
+                .name(dish.getName())
+                .price(dish.getPrice())
+                .imagesUrls(dish.getImagesUrls())
+                .restaurantName(dish.getMerchant().getRestaurantName())
+                .isRecommended(dish.getIsRecommended())
+                .build();
     }
 
 }

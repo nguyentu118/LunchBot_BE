@@ -1,5 +1,6 @@
 package vn.codegym.lunchbot_be.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
@@ -97,6 +98,7 @@ public class Dish {
     private List<CartItem> cartItems = new ArrayList<>();
 
     @OneToMany(mappedBy = "dish", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonBackReference
     private List<Favorite> favorites = new ArrayList<>();
 
     // Helper method to increment view count

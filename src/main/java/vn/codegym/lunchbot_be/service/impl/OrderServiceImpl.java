@@ -612,10 +612,14 @@ public class OrderServiceImpl implements OrderService {
      * Map Order entity sang OrderResponse DTO
      */
     private OrderResponse mapToOrderResponse(Order order) {
-        // Map shipping address
+        // ✅ Map shipping address - XỬ LÝ TRƯỜNG HỢP ĐÃ XÓA
         AddressResponse addressResponse = null;
         if (order.getShippingAddress() != null) {
             Address addr = order.getShippingAddress();
+
+            // Kiểm tra xem address có bị soft delete không
+            boolean isDeleted = (addr.getDeletedAt() != null);
+
             addressResponse = AddressResponse.builder()
                     .id(addr.getId())
                     .contactName(addr.getContactName())
@@ -627,10 +631,22 @@ public class OrderServiceImpl implements OrderService {
                     .building(addr.getBuilding())
                     .isDefault(addr.getIsDefault())
                     .build();
-            addressResponse.setFullAddress(addressResponse.buildFullAddress());
-        }
 
-        // Map order items
+            addressResponse.setFullAddress(addressResponse.buildFullAddress());
+
+            // ⚠️ Đánh dấu nếu địa chỉ đã bị xóa
+            if (isDeleted) {
+                addressResponse.setAddressType("Đã xóa");
+            }
+        } else {
+            // ✅ Trường hợp address = null (đã bị xóa hoặc không tồn tại)
+            addressResponse = AddressResponse.builder()
+                    .contactName("Không rõ")
+                    .phone("N/A")
+                    .build();
+            addressResponse.setFullAddress("Địa chỉ không còn tồn tại");
+            addressResponse.setAddressType("Đã xóa");
+        }
         List<OrderItemDTO> items = order.getOrderItems().stream()
                 .map(this::mapToOrderItemDTO)
                 .collect(Collectors.toList());
@@ -645,24 +661,21 @@ public class OrderServiceImpl implements OrderService {
                 .status(order.getStatus())
                 .paymentMethod(order.getPaymentMethod())
                 .paymentStatus(order.getPaymentStatus())
-
-                .customerName(order.getUser().getFullName())           // Lấy từ User entity
-                .customerPhone(order.getUser().getPhone())         // Optional: Lấy phone
-                // ========================================
-
+                .customerName(order.getUser().getFullName())
+                .customerPhone(order.getUser().getPhone())
                 .merchantId(order.getMerchant().getId())
                 .merchantName(order.getMerchant().getRestaurantName())
                 .merchantAddress(order.getMerchant().getAddress())
                 .merchantPhone(order.getMerchant().getPhone())
-                .shippingAddress(addressResponse)
-                .shippingPartnerName(order.getShippingPartner() != null ? order.getShippingPartner().getName() : null) // ✅ Thêm tên shipper
+                .shippingAddress(addressResponse) // ✅ Luôn có giá trị (không bao giờ null)
+                .shippingPartnerName(order.getShippingPartner() != null ? order.getShippingPartner().getName() : null)
                 .items(items)
                 .totalItems(totalItems)
                 .itemsTotal(order.getItemsTotal())
                 .discountAmount(order.getDiscountAmount())
                 .serviceFee(order.getServiceFee())
                 .shippingFee(order.getShippingFee())
-                .commissionFee(order.getCommissionFee()) // ✅ Thêm phí hoa hồng shipper
+                .commissionFee(order.getCommissionFee())
                 .totalAmount(order.getTotalAmount())
                 .couponCode(order.getCoupon() != null ? order.getCoupon().getCode() : null)
                 .notes(order.getNotes())

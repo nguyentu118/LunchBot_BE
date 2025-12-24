@@ -13,10 +13,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import vn.codegym.lunchbot_be.dto.request.DishCreateRequest;
-import vn.codegym.lunchbot_be.dto.response.DishDetailResponse;
-import vn.codegym.lunchbot_be.dto.response.DishDiscountResponse;
-import vn.codegym.lunchbot_be.dto.response.DishResponse;
-import vn.codegym.lunchbot_be.dto.response.SuggestedDishResponse;
+import vn.codegym.lunchbot_be.dto.request.DishSearchRequest;
+import vn.codegym.lunchbot_be.dto.response.*;
 import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
 import vn.codegym.lunchbot_be.model.Category;
 import vn.codegym.lunchbot_be.model.Dish;
@@ -270,5 +268,38 @@ public class DishController {
             System.err.println("Lỗi khi tải danh sách món ăn giảm giá: " + e.getMessage());
             return new ResponseEntity<>("Lỗi hệ thống khi tải danh sách món ăn giảm giá.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<Page<DishSearchResponse>> searchDishes(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String categoryName,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Boolean isRecommended,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        DishSearchRequest request = DishSearchRequest.builder()
+                .name(name)
+                .categoryName(categoryName)
+                .minPrice(minPrice)
+                .maxPrice(maxPrice)
+                .isRecommended(isRecommended)
+                .page(page)
+                .size(size)
+                .build();
+
+        Page<DishSearchResponse> results = dishService.searchDishes(request);
+        return ResponseEntity.ok(results);
+    }
+
+    @GetMapping("/quick-search")
+    public ResponseEntity<List<DishSearchResponse>> quickSearchDishes(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String categoryName
+    ) {
+        List<DishSearchResponse> results = dishService.quickSearchDishes(name, categoryName);
+        return ResponseEntity.ok(results);
     }
 }

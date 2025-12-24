@@ -42,13 +42,9 @@ public class AddressController {
     public ResponseEntity<?> getAllAddresses() {
         try {
             String email = getCurrentUserEmail();
-            System.out.println("========== DEBUG ADDRESS ==========");
-            System.out.println("Email đang đăng nhập: " + email);
 
             List<AddressResponse> addresses = addressService.getAllAddressesByUser(email);
 
-            System.out.println("Số lượng địa chỉ tìm thấy: " + addresses.size());
-            System.out.println("===================================");
             return ResponseEntity.ok(addresses);
         } catch (SecurityException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

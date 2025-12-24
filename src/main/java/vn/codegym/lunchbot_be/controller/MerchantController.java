@@ -286,6 +286,7 @@ public class MerchantController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(null);
         }
+    }
 
     @GetMapping("/profile/{id}")
     public ResponseEntity<?> getMerchantPublicInfo(@PathVariable Long id) {

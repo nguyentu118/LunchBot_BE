@@ -61,6 +61,29 @@ public interface DishRepository extends JpaRepository<Dish, Long> {
             Pageable pageable
     );
 
+    @Query("SELECT d FROM Dish d " +
+            "LEFT JOIN d.categories c " +
+            "WHERE d.isActive = true " +
+            "AND (:name IS NULL OR LOWER(d.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
+            "AND (:categoryName IS NULL OR LOWER(c.name) = LOWER(:categoryName)) " +
+            "AND (:minPrice IS NULL OR d.price >= :minPrice) " +
+            "AND (:maxPrice IS NULL OR d.price <= :maxPrice) " +
+            "AND (:isRecommended IS NULL OR d.isRecommended = :isRecommended)")
+    Page<Dish> searchDishesWithFilters(
+            @Param("name") String name,
+            @Param("categoryName") String categoryName,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("isRecommended") Boolean isRecommended,
+            Pageable pageable
+    );
+
+    @Query("SELECT d FROM Dish d JOIN d.categories c " +
+            "WHERE (:name IS NULL OR LOWER(d.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
+            "AND (:categoryName IS NULL OR LOWER(c.name) = LOWER(:categoryName))")
+    List<Dish> searchDishes(@Param("name") String name,
+                            @Param("categoryName") String categoryName);
+
 
     Page<Dish> findByIsActiveTrueOrderByViewCountDesc(Pageable pageable);
 

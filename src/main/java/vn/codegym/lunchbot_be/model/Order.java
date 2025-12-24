@@ -1,5 +1,7 @@
 package vn.codegym.lunchbot_be.model;
 
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import vn.codegym.lunchbot_be.model.enums.OrderStatus;
 import vn.codegym.lunchbot_be.model.enums.PaymentMethod;
 import vn.codegym.lunchbot_be.model.enums.PaymentStatus;
@@ -37,7 +39,15 @@ public class Order {
     private Merchant merchant;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "shipping_address_id")
+    @JoinColumn(
+            name = "shipping_address_id",
+            nullable = true,
+            foreignKey = @ForeignKey(
+                    name = "fk_order_shipping_address",
+                    foreignKeyDefinition = "FOREIGN KEY (shipping_address_id) REFERENCES addresses(id) ON DELETE SET NULL"
+            )
+    )
+    @NotFound(action = NotFoundAction.IGNORE)
     private Address shippingAddress;
 
     @ManyToOne(fetch = FetchType.LAZY)

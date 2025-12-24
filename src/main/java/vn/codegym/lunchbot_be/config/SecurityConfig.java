@@ -73,6 +73,7 @@ public class SecurityConfig {
                                 "/api/dishes/{dishId}/related",
                                 "api/dishes/list",
                                 "api/merchants/profile/{id}/dishes",
+                                "api/favorites/**",
                                 "/api/merchants/popular").permitAll()
                         .requestMatchers("/api/merchants/current/id").authenticated()
                         .requestMatchers("/api/cart/**").authenticated()

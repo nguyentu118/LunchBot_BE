@@ -104,5 +104,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT o FROM Order o WHERE o.coupon.id = :couponId AND o.merchant.id = :merchantId ORDER BY o.orderDate DESC")
     List<Order> findByCouponIdAndMerchantId(@Param("couponId") Long couponId, @Param("merchantId") Long merchantId);
+
+    @Query("SELECT CASE WHEN COUNT(o) > 0 THEN true ELSE false END " +
+            "FROM Order o WHERE o.shippingAddress.id = :addressId AND o.status IN :statuses")
+    boolean existsByShippingAddressIdAndStatusIn(
+            @Param("addressId") Long addressId,
+            @Param("statuses") List<OrderStatus> statuses);
 }
 

@@ -53,6 +53,9 @@ public class Address {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @OneToMany(mappedBy = "shippingAddress")
     private List<Order> orders = new ArrayList<>();
 
