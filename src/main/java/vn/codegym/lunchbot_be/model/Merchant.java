@@ -85,7 +85,9 @@ public class Merchant {
     @ColumnDefault("0.00001")
     private BigDecimal commissionRate = new BigDecimal("0.00001");
 
-    // Relationships
+    @OneToMany(mappedBy = "merchant", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Notification> notifications = new ArrayList<>();
+
     @OneToMany(mappedBy = "merchant", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Dish> dishes = new ArrayList<>();

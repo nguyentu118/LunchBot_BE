@@ -266,13 +266,14 @@ public class MerchantController {
             @PathVariable Long userId,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         try {
-            Long merchantId = merchantService.getMerchantIdByUserId(userId);
+            Long merchantId = merchantService.getMerchantIdByUserId(userDetails.getId());
             List<OrderResponse> orders = orderService.getOrdersByCustomerForMerchant(userId, merchantId);
             return ResponseEntity.ok(orders);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
+
     @GetMapping("/coupons/{couponId}/statistics")
     @PreAuthorize("hasRole('MERCHANT')")
     public ResponseEntity<CouponStatisticsResponse> getCouponStatistics(

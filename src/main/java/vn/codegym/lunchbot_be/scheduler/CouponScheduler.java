@@ -18,8 +18,8 @@ public class CouponScheduler {
 
     private final CouponRepository couponRepository;
 
-    @Scheduled(cron = "0 0 0 * * ?") // Production: mỗi đêm 00:00
-    //@Scheduled(fixedRate = 120000) // Test: mỗi 2 phút
+    //@Scheduled(cron = "0 0 0 * * ?") // Production: mỗi đêm 00:00
+    @Scheduled(fixedRate = 120000) // Test: mỗi 2 phút
     @Transactional
     public void deactivateExpiredCoupons() {
         log.info("🕐 Bắt đầu kiểm tra coupon hết hạn - {}", LocalDate.now());

@@ -43,8 +43,7 @@ public class DishController {
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long categoryId,
-            @RequestParam(required = false) BigDecimal minPrice,
-            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) String priceRange,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
@@ -52,8 +51,18 @@ public class DishController {
             Long userId = userDetails.getId();
             Long merchantId = merchantService.getMerchantIdByUserId(userId);
 
-            Pageable pageable = PageRequest.of(page, size);
+            BigDecimal minPrice = null;
+            BigDecimal maxPrice = null;
 
+            if (priceRange != null && !priceRange.isEmpty()) {
+                String[] parts = priceRange.split("-");
+                if (parts.length == 2) {
+                    minPrice = new BigDecimal(parts[0]);
+                    maxPrice = new BigDecimal(parts[1]);
+                }
+            }
+
+            Pageable pageable = PageRequest.of(page, size);
             Page<Dish> dishes = dishService.searchDishes(
                     merchantId,
                     keyword,
@@ -76,7 +85,7 @@ public class DishController {
                         map.put("isRecommended", dish.getIsRecommended());
                         map.put("isActive", dish.getIsActive());
 
-                        // ✅ THÊM categoryIds
+                        // ✅ CHỈ LẤY CATEGORY IDs - Không lấy toàn bộ Category object
                         List<Long> categoryIds = dish.getCategories().stream()
                                 .map(Category::getId)
                                 .collect(Collectors.toList());
@@ -87,7 +96,7 @@ public class DishController {
                     .collect(Collectors.toList());
 
             return ResponseEntity.ok(Map.of(
-                    "content", dishes.getContent(),
+                    "content", simpleDishes,
                     "totalElements", dishes.getTotalElements(),
                     "totalPages", dishes.getTotalPages(),
                     "currentPage", dishes.getNumber(),
