@@ -342,7 +342,15 @@ public class MerchantController {
         // Tìm merchant dựa trên userId của người đang login
         Long userId = userDetails.getId();
         Merchant merchant = merchantService.findByUserId(userId);
-        return ResponseEntity.ok(merchant);
+
+        MerchantProfileResponse response = MerchantProfileResponse.builder()
+                .restaurantName(merchant.getRestaurantName())
+                .address(merchant.getAddress())
+                .phone(merchant.getPhone())
+                .avatarUrl(merchant.getAvatarUrl())
+                .build();
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/profile/{id}/dishes")

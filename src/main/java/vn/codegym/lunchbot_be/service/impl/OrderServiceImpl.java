@@ -1,6 +1,7 @@
 package vn.codegym.lunchbot_be.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -11,10 +12,12 @@ import vn.codegym.lunchbot_be.dto.request.CheckoutRequest;
 import vn.codegym.lunchbot_be.dto.response.*;
 import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
 import vn.codegym.lunchbot_be.model.*;
+import vn.codegym.lunchbot_be.model.enums.CancelledBy;
 import vn.codegym.lunchbot_be.model.enums.OrderStatus;
 import vn.codegym.lunchbot_be.model.enums.PaymentStatus;
 import vn.codegym.lunchbot_be.repository.*;
 import vn.codegym.lunchbot_be.service.CheckoutService;
+import vn.codegym.lunchbot_be.service.OrderNotificationService;
 import vn.codegym.lunchbot_be.service.OrderService;
 
 import java.math.BigDecimal;
@@ -29,6 +32,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderServiceImpl implements OrderService {
 
     private final UserRepository userRepository;
@@ -39,6 +43,8 @@ public class OrderServiceImpl implements OrderService {
     private final CheckoutService checkoutService;
     private final ShippingPartnerRepository shippingPartnerRepository;
     private final ShippingServiceImpl shippingService;
+    private final OrderNotificationService orderNotificationService;
+
 
     @Override
     @Transactional(readOnly = true)
@@ -221,6 +227,12 @@ public class OrderServiceImpl implements OrderService {
 
         // 13. Lưu order
         Order savedOrder = orderRepository.save(order);
+        try {
+            orderNotificationService.notifyMerchantNewOrder(savedOrder);
+            System.out.println("✅ Sent notification to merchant for order #" + savedOrder.getId());
+        } catch (Exception e) {
+            System.err.println("❌ Failed to send notification: " + e.getMessage());
+        }
 
         // 14. Xóa các món đã đặt khỏi giỏ hàng
         for (CartItem item : itemsToOrder) {
@@ -261,6 +273,10 @@ public class OrderServiceImpl implements OrderService {
         return mapToOrderResponse(order);
     }
 
+
+
+
+
     @Override
     @Transactional
     public OrderResponse cancelOrder(String email, Long orderId, String reason) {
@@ -279,6 +295,8 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Đơn hàng này không thể hủy");
         }
 
+        OrderStatus oldStatus = order.getStatus();
+
         // Cập nhật trạng thái
         order.updateStatus(OrderStatus.CANCELLED);
         order.setCancellationReason(reason);
@@ -291,6 +309,13 @@ public class OrderServiceImpl implements OrderService {
         }
 
         Order cancelledOrder = orderRepository.save(order);
+
+        try {
+            orderNotificationService.notifyOrderStatusChanged(cancelledOrder, oldStatus, OrderStatus.CANCELLED);
+            System.out.println("✅ Sent cancellation notification for order #" + cancelledOrder.getId());
+        } catch (Exception e) {
+            System.err.println("❌ Failed to send notification: " + e.getMessage());
+        }
 
         return mapToOrderResponse(cancelledOrder);
     }
@@ -314,7 +339,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public OrderResponse updateOrderStatus(Long merchantId, Long orderId, OrderStatus newStatus,String cancelReason) {
+    public OrderResponse updateOrderStatus(Long merchantId, Long orderId, OrderStatus newStatus, String cancelReason) {
         // 1. Tìm đơn hàng và kiểm tra quyền sở hữu của merchant
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
@@ -323,23 +348,41 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Bạn không có quyền cập nhật đơn hàng này");
         }
 
-        // 2. Validate trạng thái (giữ nguyên logic cũ của bạn)
+        // 2. Validate trạng thái
         validateStatusTransition(order.getStatus(), newStatus);
 
-        // 3. CẬP NHẬT MỚI: Lưu lý do hủy nếu trạng thái là CANCELLED
-        if ( newStatus == OrderStatus.CANCELLED) {
+        OrderStatus oldStatus = order.getStatus();
+
+        // 3. ✅ XỬ LÝ ĐẶC BIỆT KHI MERCHANT HỦY ĐƠN
+        if (newStatus == OrderStatus.CANCELLED) {
             if (cancelReason == null || cancelReason.trim().isEmpty()) {
                 throw new RuntimeException("Vui lòng cung cấp lý do hủy đơn");
             }
-            order.setCancellationReason(cancelReason); // Đảm bảo trong Entity Order đã có field này
-            order.setCancelledAt(LocalDateTime.now()); // Nếu bạn muốn lưu thời điểm hủy
+            order.setCancelledBy(CancelledBy.MERCHANT);
+            order.setCancellationReason(cancelReason);
+            order.setCancelledAt(LocalDateTime.now());
+
+            // ✅ Hoàn lại coupon nếu có
+            if (order.getCoupon() != null) {
+                Coupon coupon = order.getCoupon();
+                coupon.setUsedCount(coupon.getUsedCount() - 1);
+                couponRepository.save(coupon);
+            }
         }
 
-        // 4. Cập nhật trạng thái chính
+        // 4. Cập nhật trạng thái
         order.updateStatus(newStatus);
 
-        // 5. Lưu và trả về response (giữ nguyên logic build response cũ)
+        // 5. Lưu và gửi thông báo
         Order savedOrder = orderRepository.save(order);
+
+        try {
+            orderNotificationService.notifyOrderStatusChanged(savedOrder, oldStatus, newStatus);
+            log.info("✅ Sent notification for order #{}: {} -> {}",
+                    savedOrder.getId(), oldStatus, newStatus);
+        } catch (Exception e) {
+            log.error("❌ Failed to send notification: {}", e.getMessage());
+        }
 
         return mapToOrderResponse(savedOrder);
     }

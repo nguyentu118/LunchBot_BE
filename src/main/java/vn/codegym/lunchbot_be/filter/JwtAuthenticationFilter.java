@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -20,50 +21,60 @@ import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;  // ← THÊM dependency này
+
+    private final UserRepository userRepository;
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        // ✅ SKIP WEBSOCKET PATHS
+        return path.startsWith("/ws") || path.equals("/error");
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         try {
-            String jwt = getJwtFromRequest(request);
+            String token = getTokenFromRequest(request);
 
-            if (jwt != null && jwtUtil.validateToken(jwt)) {
-                // Lấy email từ token
-                String email = jwtUtil.extractEmail(jwt);  // ← Dùng extractEmail()
+            if (token != null && jwtUtil.validateToken(token)) {
 
-                // Lấy User từ database
+                String email = jwtUtil.extractEmail(token);
+
                 User user = userRepository.findByEmail(email)
                         .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
 
-                // Build UserDetailsImpl từ User
                 UserDetailsImpl userDetails = UserDetailsImpl.build(user);
 
-                // Tạo Authentication với userDetails làm principal
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails,                    // ← Principal (QUAN TRỌNG!)
                                 null,
                                 userDetails.getAuthorities()
                         );
-
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                // Set vào SecurityContext
+                var authorities = jwtUtil.getAuthorities(token);
+
+//                var authentication = new UsernamePasswordAuthenticationToken(
+//                        email, null, authorities);
+
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+                log.debug("Set authentication for user: {}", email);
             }
         } catch (Exception e) {
-            logger.error("Cannot set user authentication: {}");
+            log.error("Cannot set user authentication: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private String getJwtFromRequest(HttpServletRequest request) {
+    private String getTokenFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
