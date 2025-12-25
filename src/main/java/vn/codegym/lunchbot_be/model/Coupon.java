@@ -31,6 +31,7 @@ public class Coupon {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "merchant_id", nullable = false)
     @JsonIgnoreProperties({"coupons", "orders", "dishes", "user", "hibernateLazyInitializer", "handler"})
+    @JsonIgnore
     private Merchant merchant;
 
     @Column(nullable = false, unique = false)

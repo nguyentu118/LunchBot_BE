@@ -1,7 +1,9 @@
 package vn.codegym.lunchbot_be.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.hibernate.annotations.NotFound;
 import org.hibernate.annotations.NotFoundAction;
+import vn.codegym.lunchbot_be.model.enums.CancelledBy;
 import vn.codegym.lunchbot_be.model.enums.OrderStatus;
 import vn.codegym.lunchbot_be.model.enums.PaymentMethod;
 import vn.codegym.lunchbot_be.model.enums.PaymentStatus;
@@ -32,10 +34,12 @@ public class Order {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "merchant_id", nullable = false)
+    @JsonIgnore
     private Merchant merchant;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -54,11 +58,15 @@ public class Order {
     @JoinColumn(name = "shipping_partner_id")
     private ShippingPartner shippingPartner;
 
+    @Enumerated(EnumType.STRING)
+    private CancelledBy cancelledBy;
+
     @Column(precision = 5, scale = 2)
     private BigDecimal commissionRate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "coupon_id")
+    @JsonIgnore
     private Coupon coupon;
 
     @Enumerated(EnumType.STRING)
@@ -108,6 +116,7 @@ public class Order {
     private String cancellationReason;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<OrderItem> orderItems = new ArrayList<>();
 
     @OneToMany(mappedBy = "order")
