@@ -89,7 +89,10 @@ public class Order {
     private BigDecimal totalAmount;
 
     @Column(precision = 12, scale = 2)
-    private BigDecimal commissionFee = BigDecimal.ZERO;
+    private BigDecimal shippingCommissionFee = BigDecimal.ZERO;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal platformCommissionFee = BigDecimal.ZERO;
 
     @Column(columnDefinition = "TEXT", length = 500)
     private String notes;
@@ -119,7 +122,7 @@ public class Order {
 
         // Calculate commission
         if (this.merchant != null) {
-            this.commissionFee = this.itemsTotal.multiply(this.merchant.getCommissionRate());
+            this.shippingCommissionFee = this.itemsTotal.multiply(this.merchant.getCommissionRate());
         }
 
         // Calculate final total
@@ -127,7 +130,7 @@ public class Order {
                 .subtract(this.discountAmount)
                 .add(this.serviceFee)
                 .add(this.shippingFee)
-                .add(this.commissionFee);
+                .add(this.shippingCommissionFee);
     }
 
     public boolean isCancellable() {

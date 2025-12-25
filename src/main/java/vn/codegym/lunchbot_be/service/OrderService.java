@@ -33,7 +33,7 @@ public interface OrderService {
     List<OrderResponse> getOrdersByMerchant(Long merchantId, OrderStatus status);
 
     // Merchant cập nhật trạng thái đơn hàng (Ví dụ: Từ PENDING -> PROCESSING)
-    OrderResponse updateOrderStatus(Long merchantId, Long orderId, OrderStatus newStatus);
+    OrderResponse updateOrderStatus(Long merchantId, Long orderId, OrderStatus newStatus, String cancelReason);
 
     OrderStatisticsResponse getOrderStatisticsByMerchant(Long merchantId);
 

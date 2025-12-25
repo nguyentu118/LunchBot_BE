@@ -110,5 +110,51 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     boolean existsByShippingAddressIdAndStatusIn(
             @Param("addressId") Long addressId,
             @Param("statuses") List<OrderStatus> statuses);
+
+    @Query(value =
+            "SELECT * FROM orders o WHERE o.merchant_id = :merchantId " +
+                    "ORDER BY " +
+                    "  CASE " +
+                    "    WHEN o.status IN ('PENDING', 'CONFIRMED', 'PROCESSING') THEN 1 " +  // Nhóm cần xử lý ngay
+                    "    WHEN o.status IN ('READY', 'DELIVERING') THEN 2 " +                  // Nhóm đang hoàn thiện
+                    "    WHEN o.status IN ('COMPLETED', 'CANCELLED') THEN 3 " +               // Nhóm đã kết thúc
+                    "    ELSE 99 " +
+                    "  END, " +
+                    // Ưu tiên 2: Theo trạng thái
+                    "  CASE o.status " +
+                    "    WHEN 'PENDING' THEN 1 " +           // Đơn chờ xác nhận
+                    "    WHEN 'CONFIRMED' THEN 2 " +         // Đơn đã xác nhận
+                    "    WHEN 'PROCESSING' THEN 3 " +        // Đơn đang chế biến
+                    "    WHEN 'READY' THEN 4 " +             // Đơn đã xong món
+                    "    WHEN 'DELIVERING' THEN 5 " +        // Đơn đang giao
+                    "    WHEN 'COMPLETED' THEN 6 " +         // Đơn hoàn thành
+                    "    WHEN 'CANCELLED' THEN 7 " +         // Đơn đã hủy
+                    "    ELSE 99 " +
+                    "  END, " +
+                    // Ưu tiên 1: Đơn hôm nay lên đầu
+                    "  CASE WHEN DATE(o.order_date) = CURRENT_DATE THEN 0 ELSE 1 END, " +
+                    // Ưu tiên 3: Trong cùng nhóm, đơn mới nhất lên trước
+                    "  o.order_date DESC",
+            nativeQuery = true)
+    List<Order> findByMerchantIdWithPriority(@Param("merchantId") Long merchantId);
+
+    @Query(value =
+            "SELECT * FROM orders o WHERE o.merchant_id = :merchantId AND o.status = :status " +
+                    "ORDER BY o.order_date DESC",
+            nativeQuery = true)
+    List<Order> findByMerchantIdAndStatusOrderByDateDesc(
+            @Param("merchantId") Long merchantId,
+            @Param("status") String status
+    );
+
+    @Query("SELECT o FROM Order o WHERE o.merchant.id = :merchantId " +
+            "AND o.status = 'COMPLETED' " +
+            "AND o.completedAt BETWEEN :startDate AND :endDate " +
+            "ORDER BY o.completedAt DESC")
+    List<Order> findCompletedOrdersByDateRange(
+            @Param("merchantId") Long merchantId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
 }
 

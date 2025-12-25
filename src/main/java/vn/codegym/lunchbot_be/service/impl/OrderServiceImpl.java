@@ -14,7 +14,6 @@ import vn.codegym.lunchbot_be.model.*;
 import vn.codegym.lunchbot_be.model.enums.OrderStatus;
 import vn.codegym.lunchbot_be.model.enums.PaymentStatus;
 import vn.codegym.lunchbot_be.repository.*;
-import vn.codegym.lunchbot_be.service.AddressService;
 import vn.codegym.lunchbot_be.service.CheckoutService;
 import vn.codegym.lunchbot_be.service.OrderService;
 
@@ -188,7 +187,7 @@ public class OrderServiceImpl implements OrderService {
                 .serviceFee(serviceFee)
                 .shippingFee(shippingFee)
                 .totalAmount(totalAmount)
-                .commissionFee(shipperCommissionFee) // ✅ Lưu phí hoa hồng cho shipper
+                .shippingCommissionFee(shipperCommissionFee) // ✅ Lưu phí hoa hồng cho shipper
                 .notes(request.getNotes())
                 .orderDate(LocalDateTime.now())
                 .orderItems(new ArrayList<>())
@@ -302,42 +301,48 @@ public class OrderServiceImpl implements OrderService {
         // 1. Nếu có status thì lọc, không thì lấy hết
         List<Order> orders;
         if (status != null) {
-            orders = orderRepository.findByMerchantIdAndStatus(merchantId, status);
+            orders = orderRepository.findByMerchantIdAndStatusOrderByDateDesc(merchantId, status.name());
         } else {
-            orders = orderRepository.findByMerchantId(merchantId);
+            orders = orderRepository.findByMerchantIdWithPriority(merchantId);
         }
 
         // 2. Sắp xếp đơn mới nhất lên đầu
         return orders.stream()
-                .sorted(Comparator.comparing(Order::getOrderDate).reversed())
                 .map(this::mapToOrderResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
-    public OrderResponse updateOrderStatus(Long merchantId, Long orderId, OrderStatus newStatus) {
-        // 1. Tìm đơn hàng
+    public OrderResponse updateOrderStatus(Long merchantId, Long orderId, OrderStatus newStatus,String cancelReason) {
+        // 1. Tìm đơn hàng và kiểm tra quyền sở hữu của merchant
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
 
-        // 2. Validate: Đơn hàng có thuộc về merchant này không?
         if (!order.getMerchant().getId().equals(merchantId)) {
-            throw new RuntimeException("Bạn không có quyền chỉnh sửa đơn hàng này");
+            throw new RuntimeException("Bạn không có quyền cập nhật đơn hàng này");
         }
 
-        // 3. Validate logic chuyển trạng thái (State Transition)
-        // Ví dụ: Không thể chuyển từ CANCELLED về PENDING
+        // 2. Validate trạng thái (giữ nguyên logic cũ của bạn)
         validateStatusTransition(order.getStatus(), newStatus);
 
-        // 4. Cập nhật
+        // 3. CẬP NHẬT MỚI: Lưu lý do hủy nếu trạng thái là CANCELLED
+        if ( newStatus == OrderStatus.CANCELLED) {
+            if (cancelReason == null || cancelReason.trim().isEmpty()) {
+                throw new RuntimeException("Vui lòng cung cấp lý do hủy đơn");
+            }
+            order.setCancellationReason(cancelReason); // Đảm bảo trong Entity Order đã có field này
+            order.setCancelledAt(LocalDateTime.now()); // Nếu bạn muốn lưu thời điểm hủy
+        }
+
+        // 4. Cập nhật trạng thái chính
         order.updateStatus(newStatus);
+
+        // 5. Lưu và trả về response (giữ nguyên logic build response cũ)
         Order savedOrder = orderRepository.save(order);
 
         return mapToOrderResponse(savedOrder);
     }
-
-    // Thêm method này vào OrderServiceImpl.java
 
     @Override
     @Transactional(readOnly = true)
@@ -675,7 +680,7 @@ public class OrderServiceImpl implements OrderService {
                 .discountAmount(order.getDiscountAmount())
                 .serviceFee(order.getServiceFee())
                 .shippingFee(order.getShippingFee())
-                .commissionFee(order.getCommissionFee())
+                .commissionFee(order.getShippingCommissionFee())
                 .totalAmount(order.getTotalAmount())
                 .couponCode(order.getCoupon() != null ? order.getCoupon().getCode() : null)
                 .notes(order.getNotes())
