@@ -47,6 +47,10 @@ public class Transaction {
     @Column(nullable = false)
     private TransactionStatus status = TransactionStatus.PENDING;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reconciliation_request_id")
+    private ReconciliationRequest reconciliationRequest;
+
     @CreationTimestamp
     private LocalDateTime transactionDate;
 
