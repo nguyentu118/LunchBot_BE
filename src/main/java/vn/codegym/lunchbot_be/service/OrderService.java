@@ -3,6 +3,7 @@ package vn.codegym.lunchbot_be.service;
 import org.springframework.data.domain.Page;
 import vn.codegym.lunchbot_be.dto.request.CheckoutRequest;
 import vn.codegym.lunchbot_be.dto.response.*;
+import vn.codegym.lunchbot_be.model.Order;
 import vn.codegym.lunchbot_be.model.enums.OrderStatus;
 
 import java.util.List;

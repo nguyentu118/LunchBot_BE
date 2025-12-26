@@ -14,12 +14,15 @@ import vn.codegym.lunchbot_be.model.enums.OrderStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByUserId(Long userId);
 
     Page<Order> findByUserId(Long userId, Pageable pageable);
+
+    Optional<Order> findByVnpayTransactionRef(String vnpayTransactionRef);
 
     List<Order> findByMerchantId(Long merchantId);
 
