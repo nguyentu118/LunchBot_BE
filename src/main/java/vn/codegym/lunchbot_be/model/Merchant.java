@@ -22,8 +22,9 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @ToString(exclude = {"user", "dishes", "orders", "coupons", "transactions",
-        "withdrawalRequests", "revenueClaims"})
-@EqualsAndHashCode(exclude = {"user", "dishes", "orders", "coupons", "transactions", "withdrawalRequests", "revenueClaims"})
+        "withdrawalRequests", "revenueClaims", "reconciliationRequests"})
+@EqualsAndHashCode(exclude = {"user", "dishes", "orders", "coupons", "transactions",
+        "withdrawalRequests", "revenueClaims", "reconciliationRequests"})
 public class Merchant {
 
     @Id
@@ -110,6 +111,9 @@ public class Merchant {
 
     @OneToMany(mappedBy = "merchant", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RevenueClaim> revenueClaims = new ArrayList<>();
+
+    @OneToMany(mappedBy = "merchant", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ReconciliationRequest> reconciliationRequests = new ArrayList<>();
 
     // Business methods
     public boolean canBecomePartner() {
