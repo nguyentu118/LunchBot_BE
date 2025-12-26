@@ -226,7 +226,7 @@ public class AdminMerchantServiceImpl implements AdminMerchantService {
         response.setRevenueTotal(merchant.getRevenueTotal());
         response.setCurrentBalance(merchant.getCurrentBalance());
         response.setStatus(merchant.getStatus());
-        response.setIsPartner(merchant.getIsPartner());
+        response.setPartnerStatus(merchant.getPartnerStatus());
         response.setIsLocked(merchant.getIsLocked());
         response.setIsApproved(merchant.getIsApproved());
         response.setRejectionReason(merchant.getRejectionReason());

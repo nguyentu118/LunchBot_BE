@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import vn.codegym.lunchbot_be.dto.response.PopularMerchantDto;
 import vn.codegym.lunchbot_be.model.Merchant;
 import vn.codegym.lunchbot_be.model.enums.MerchantStatus;
+import vn.codegym.lunchbot_be.model.enums.PartnerStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,9 +25,6 @@ public interface MerchantRepository extends JpaRepository<Merchant, Long> {
 
     @Query("SELECT m FROM Merchant m WHERE m.restaurantName LIKE %:keyword%")
     Page<Merchant> searchByName(@Param("keyword") String keyword, Pageable pageable);
-
-    @Query("SELECT m FROM Merchant m WHERE m.isPartner = :isPartner")
-    List<Merchant> findByPartnerStatus(@Param("isPartner") boolean isPartner);
 
     Page<Merchant> findByStatus(MerchantStatus status, Pageable pageable);
 
@@ -126,4 +124,6 @@ public interface MerchantRepository extends JpaRepository<Merchant, Long> {
             "AND d.images_urls != '[]' " +
             "LIMIT 1", nativeQuery = true)
     List<String> findRawImageJsonByMerchantId(@Param("merchantId") Long merchantId);
+
+    List<Merchant> findByPartnerStatus(PartnerStatus partnerStatus);
 }

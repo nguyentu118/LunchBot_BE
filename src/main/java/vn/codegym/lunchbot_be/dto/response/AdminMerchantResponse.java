@@ -3,6 +3,7 @@ package vn.codegym.lunchbot_be.dto.response;
 import vn.codegym.lunchbot_be.model.enums.MerchantStatus;
 
 import lombok.Data;
+import vn.codegym.lunchbot_be.model.enums.PartnerStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,13 +22,13 @@ public class AdminMerchantResponse {
     private BigDecimal revenueTotal;
     private BigDecimal currentBalance;
     private MerchantStatus status;
-    private Boolean isPartner;
     private Boolean isLocked;
     private Boolean isApproved;
     private String rejectionReason;
     private LocalDateTime registrationDate;
     private LocalDateTime approvalDate;
     private LocalDateTime lockedAt;
+    private PartnerStatus partnerStatus;
 
     // Statistics
     private Integer dishCount;

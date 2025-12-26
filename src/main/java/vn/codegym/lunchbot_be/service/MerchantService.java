@@ -5,6 +5,7 @@ import vn.codegym.lunchbot_be.dto.response.MerchantProfileResponse;
 import vn.codegym.lunchbot_be.dto.response.PopularMerchantDto;
 import vn.codegym.lunchbot_be.model.Merchant;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,4 +19,17 @@ public interface MerchantService {
     Merchant findByUserId(Long userId);
 
     List<DishResponse> getDishesByMerchantId(Long merchantId);
+    // ...
+    void registerPartner(Long merchantId);
+
+    public BigDecimal calculateCurrentMonthRevenue(Long merchantId);
+
+    // Admin: Lấy danh sách chờ duyệt
+    List<MerchantProfileResponse> getPendingPartnerRequests();
+
+    // Admin: Duyệt yêu cầu
+    void approvePartnerRequest(Long merchantId);
+
+    // Admin: Từ chối yêu cầu
+    void rejectPartnerRequest(Long merchantId, String reason);
 }

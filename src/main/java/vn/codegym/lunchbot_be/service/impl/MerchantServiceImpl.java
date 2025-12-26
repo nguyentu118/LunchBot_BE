@@ -15,13 +15,17 @@ import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
 import vn.codegym.lunchbot_be.model.Dish;
 import vn.codegym.lunchbot_be.model.Merchant;
 import vn.codegym.lunchbot_be.model.User;
+import vn.codegym.lunchbot_be.model.enums.PartnerStatus;
 import vn.codegym.lunchbot_be.repository.DishRepository;
 import vn.codegym.lunchbot_be.repository.MerchantRepository;
+import vn.codegym.lunchbot_be.repository.OrderRepository;
 import vn.codegym.lunchbot_be.repository.UserRepository;
 import vn.codegym.lunchbot_be.service.MerchantService;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +40,11 @@ public class MerchantServiceImpl implements MerchantService {
     private final MerchantRepository merchantRepository;
 
     private final DishRepository dishRepository;
+
+    private final OrderRepository orderRepository;
+
+    private static final BigDecimal PARTNER_REVENUE_THRESHOLD = new BigDecimal("100000000"); // 100 triệu
+
 
     public Long getMerchantIdByUserId(Long userId) {
         Merchant merchant = merchantRepository.findByUserId(userId)
@@ -297,5 +306,113 @@ public class MerchantServiceImpl implements MerchantService {
                         // Thêm các thuộc tính khác của DishResponse tại đây
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void registerPartner(Long merchantId) {
+        Merchant merchant = merchantRepository.findById(merchantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Merchant không tồn tại"));
+
+        // 1. Kiểm tra trạng thái hiện tại
+        if (merchant.getPartnerStatus() == PartnerStatus.PENDING) {
+            throw new IllegalStateException("Bạn đã gửi yêu cầu, vui lòng chờ duyệt.");
+        }
+        if (merchant.getPartnerStatus() == PartnerStatus.APPROVED) {
+            throw new IllegalStateException("Bạn đã là đối tác thân thiết rồi.");
+        }
+
+        // 2. Tính doanh thu THÁNG HIỆN TẠI (hoặc tháng trước tùy nghiệp vụ, ở đây làm tháng hiện tại)
+        YearMonth currentMonth = YearMonth.now();
+        LocalDateTime startDate = currentMonth.atDay(1).atStartOfDay();
+        LocalDateTime endDate = currentMonth.atEndOfMonth().atTime(23, 59, 59);
+
+        BigDecimal currentMonthRevenue = orderRepository.sumRevenueByMerchantAndDateRange(
+                merchantId, startDate, endDate
+        );
+
+        // Xử lý null nếu chưa có đơn nào
+        if (currentMonthRevenue == null) {
+            currentMonthRevenue = BigDecimal.ZERO;
+        }
+
+        // 3. Kiểm tra điều kiện > 100tr
+        if (currentMonthRevenue.compareTo(PARTNER_REVENUE_THRESHOLD) < 0) {
+            throw new IllegalStateException(
+                    "Doanh thu tháng này của bạn là " +
+                            String.format("%,.0f", currentMonthRevenue) + " VNĐ. " +
+                            "Chưa đạt điều kiện tối thiểu 100,000,000 VNĐ để đăng ký."
+            );
+        }
+
+        // 4. Cập nhật trạng thái
+        merchant.setPartnerStatus(PartnerStatus.PENDING);
+        merchantRepository.save(merchant);
+    }
+
+    @Override // Nhớ khai báo trong Interface MerchantService nữa nhé
+    public BigDecimal calculateCurrentMonthRevenue(Long merchantId) {
+        YearMonth currentMonth = YearMonth.now();
+        LocalDateTime startDate = currentMonth.atDay(1).atStartOfDay();
+        LocalDateTime endDate = currentMonth.atEndOfMonth().atTime(23, 59, 59);
+
+        BigDecimal revenue = orderRepository.sumRevenueByMerchantAndDateRange(
+                merchantId, startDate, endDate
+        );
+
+        return revenue != null ? revenue : BigDecimal.ZERO;
+    }
+
+    @Override
+    public List<MerchantProfileResponse> getPendingPartnerRequests() {
+        List<Merchant> pendingMerchants = merchantRepository.findByPartnerStatus(PartnerStatus.PENDING);
+
+        return pendingMerchants.stream()
+                .map(merchant -> MerchantProfileResponse.builder()
+                        .merchantId(merchant.getId())
+                        .restaurantName(merchant.getRestaurantName())
+                        .address(merchant.getAddress())
+                        .phone(merchant.getPhone())
+                        .partnerStatus(merchant.getPartnerStatus())
+                        .avatarUrl(merchant.getAvatarUrl())
+                        .openTime(merchant.getOpenTime())
+                        .closeTime(merchant.getCloseTime())
+                        .currentMonthRevenue(calculateCurrentMonthRevenue(merchant.getId()))
+                        .build())
+                .collect(Collectors.toList());
+    }
+    @Override
+    @Transactional
+    public void approvePartnerRequest(Long merchantId) {
+        Merchant merchant = merchantRepository.findById(merchantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Merchant không tồn tại"));
+
+        if (merchant.getPartnerStatus() != PartnerStatus.PENDING) {
+            throw new IllegalStateException("Yêu cầu không hợp lệ hoặc đã được xử lý.");
+        }
+
+        // 1. Cập nhật trạng thái
+        merchant.setPartnerStatus(PartnerStatus.APPROVED);
+
+        // 2. Cập nhật quyền lợi (VD: Giảm phí sàn)
+        // Giả sử logic: Partner được hưởng mức phí thấp 0.5%
+        merchant.setCommissionRate(new BigDecimal("0.005"));
+
+        merchantRepository.save(merchant);
+    }
+
+    @Override
+    @Transactional
+    public void rejectPartnerRequest(Long merchantId, String reason) {
+        Merchant merchant = merchantRepository.findById(merchantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Merchant không tồn tại"));
+
+        if (merchant.getPartnerStatus() != PartnerStatus.PENDING) {
+            throw new IllegalStateException("Yêu cầu không hợp lệ hoặc đã được xử lý.");
+        }
+
+        merchant.setPartnerStatus(PartnerStatus.REJECTED);
+        // Có thể lưu reason vào một bảng log khác hoặc gửi email thông báo
+        merchantRepository.save(merchant);
     }
 }

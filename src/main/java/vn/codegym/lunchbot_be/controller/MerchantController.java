@@ -22,6 +22,7 @@ import vn.codegym.lunchbot_be.service.impl.CouponServiceImpl;
 import vn.codegym.lunchbot_be.service.impl.MerchantServiceImpl;
 import vn.codegym.lunchbot_be.service.impl.UserDetailsImpl;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -342,12 +343,15 @@ public class MerchantController {
         // Tìm merchant dựa trên userId của người đang login
         Long userId = userDetails.getId();
         Merchant merchant = merchantService.findByUserId(userId);
+        BigDecimal currentMonthRevenue = merchantService.calculateCurrentMonthRevenue(merchant.getId());
 
         MerchantProfileResponse response = MerchantProfileResponse.builder()
                 .restaurantName(merchant.getRestaurantName())
                 .address(merchant.getAddress())
                 .phone(merchant.getPhone())
                 .avatarUrl(merchant.getAvatarUrl())
+                .partnerStatus(merchant.getPartnerStatus())
+                .currentMonthRevenue(currentMonthRevenue)
                 .build();
 
         return ResponseEntity.ok(response);
@@ -358,4 +362,24 @@ public class MerchantController {
         List<DishResponse> dishes = merchantService.getDishesByMerchantId(id);
         return ResponseEntity.ok(dishes);
     }
+
+    // API Đăng ký đối tác thân thiết
+    @PostMapping("/partner-registration")
+    @PreAuthorize("hasRole('MERCHANT')")
+    public ResponseEntity<?> registerPartner(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+        try {
+            Long userId = userDetails.getId();
+            Long merchantId = merchantService.getMerchantIdByUserId(userId); // Hàm helper bạn đã có hoặc tự viết tìm ID
+
+            merchantService.registerPartner(merchantId);
+
+            return ResponseEntity.ok(Map.of("message", "Gửi yêu cầu đăng ký Đối tác thân thiết thành công! Admin sẽ sớm xét duyệt."));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi hệ thống: " + e.getMessage()));
+        }
+    }
+
+
 }

@@ -7,6 +7,7 @@ import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import vn.codegym.lunchbot_be.model.enums.MerchantStatus;
+import vn.codegym.lunchbot_be.model.enums.PartnerStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -53,8 +54,8 @@ public class Merchant {
     @ColumnDefault("0.00")
     private BigDecimal revenueTotal = BigDecimal.ZERO;
 
-    @Column(nullable = false)
-    private Boolean isPartner = false;
+    @Enumerated(EnumType.STRING)
+    private PartnerStatus partnerStatus = PartnerStatus.NONE;
 
     @Column(nullable = false)
     @ColumnDefault("false")

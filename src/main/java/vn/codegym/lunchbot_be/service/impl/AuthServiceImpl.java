@@ -70,7 +70,6 @@ public class AuthServiceImpl {
                 .phone(request.getPhone())
                 .user(user)
                 .isApproved(false)
-                .isPartner(false)
                 .isLocked(false)
                 .status(MerchantStatus.PENDING)
                 .build();
