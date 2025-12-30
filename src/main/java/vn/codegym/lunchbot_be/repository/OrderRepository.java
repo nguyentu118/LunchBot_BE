@@ -164,5 +164,33 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     boolean existsByMerchantIdAndStatusIn(Long merchantId, List<OrderStatus> statuses);
 
+    @Query("SELECT o FROM Order o WHERE o.merchant.id = :merchantId " +
+            "AND o.status = 'CANCELLED' " +
+            "AND o.cancelledAt BETWEEN :startDate AND :endDate " +
+            "ORDER BY o.cancelledAt DESC")
+    List<Order> findCancelledOrdersByDateRange(
+            @Param("merchantId") Long merchantId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.merchant.id = :merchantId " +
+            "AND o.status = 'COMPLETED' " +
+            "AND o.completedAt BETWEEN :startDate AND :endDate")
+    Long countCompletedOrdersByDateRange(
+            @Param("merchantId") Long merchantId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.merchant.id = :merchantId " +
+            "AND o.status = 'CANCELLED' " +
+            "AND o.cancelledAt BETWEEN :startDate AND :endDate")
+    Long countCancelledOrdersByDateRange(
+            @Param("merchantId") Long merchantId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
+
 }
 
