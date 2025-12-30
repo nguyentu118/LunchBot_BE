@@ -49,15 +49,16 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public CheckoutResponse getCheckoutInfo(String email) {
-        return checkoutService.getCheckoutInfo(email);
+    public CheckoutResponse getCheckoutInfo(String email, List<Long> selectedDishIds) {
+        return checkoutService.getCheckoutInfo(email, selectedDishIds);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public CheckoutResponse applyDiscount(String email, String couponCode) {
-        return checkoutService.applyDiscount(email, couponCode);
+    public CheckoutResponse applyDiscount(String email, String couponCode, List<Long> selectedDishIds) {
+        return checkoutService.applyDiscount(email, couponCode, selectedDishIds);
     }
+
     @Override
     @Transactional
     public OrderResponse createOrder(String email, CheckoutRequest request) {
@@ -235,12 +236,25 @@ public class OrderServiceImpl implements OrderService {
             System.err.println("❌ Failed to send notification: " + e.getMessage());
         }
 
-        // 14. Xóa các món đã đặt khỏi giỏ hàng
-        for (CartItem item : itemsToOrder) {
-            cart.getCartItems().remove(item);
-        }
-        cartRepository.save(cart);
+        try {
+            // Lấy lại cart để đảm bảo có dữ liệu mới nhất
+            Cart freshCart = cartRepository.findByUserId(user.getId())
+                    .orElseThrow(() -> new RuntimeException("Giỏ hàng không tồn tại"));
 
+            // Lọc lại items cần xóa dựa trên dishIds
+            List<CartItem> itemsToRemove = freshCart.getCartItems().stream()
+                    .filter(item -> request.getDishIds().contains(item.getDish().getId()))
+                    .collect(Collectors.toList());
+
+            if (!itemsToRemove.isEmpty()) {
+                freshCart.getCartItems().removeAll(itemsToRemove);
+                cartRepository.save(freshCart);
+                log.info("✅ Removed {} items from cart for order #{}", itemsToRemove.size(), savedOrder.getId());
+            }
+        } catch (Exception e) {
+            log.error("❌ Failed to remove items from cart: {}", e.getMessage());
+            // Không throw exception vì order đã tạo thành công
+        }
         return mapToOrderResponse(savedOrder);
     }
 

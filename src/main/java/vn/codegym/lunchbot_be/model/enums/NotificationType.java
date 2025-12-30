@@ -22,6 +22,10 @@ public enum NotificationType {
     PROMOTION_NEW,          // Khuyến mãi mới
     PROMOTION_EXPIRING,     // Khuyến mãi sắp hết hạn
 
+    PARTNER_REQUEST,    // Thông báo cho admin về yêu cầu đối tác mới
+    PARTNER_APPROVED,   // Thông báo cho merchant khi được duyệt
+    PARTNER_REJECTED,   // Thông báo cho merchant khi bị từ chối
+
     // Thông báo hệ thống
     SYSTEM_ANNOUNCEMENT,    // Thông báo hệ thống
     SYSTEM_MAINTENANCE,     // Bảo trì hệ thống

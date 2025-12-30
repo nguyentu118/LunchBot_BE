@@ -39,7 +39,7 @@ public class CheckoutServiceImpl implements CheckoutService {
 
     @Override
     @Transactional(readOnly = true)
-    public CheckoutResponse getCheckoutInfo(String email) {
+    public CheckoutResponse getCheckoutInfo(String email, List<Long> selectedDishIds) {
         User user = getUserByEmail(email);
         Cart cart = getCartByUser(user);
 
@@ -48,14 +48,34 @@ public class CheckoutServiceImpl implements CheckoutService {
             throw new RuntimeException("Giỏ hàng đang trống. Vui lòng thêm món ăn trước khi thanh toán.");
         }
 
-        // ✅ 2. KHÔNG VALIDATE MERCHANT Ở ĐÂY NỮA
-        // Frontend sẽ xử lý việc chọn món từ 1 nhà hàng
-        // Backend chỉ trả về toàn bộ thông tin giỏ hàng
-
         List<CartItem> cartItems = cart.getCartItems();
 
-        // ✅ 3. Kiểm tra món còn active không
-        for (CartItem item : cartItems) {
+        // ✅ 2. LỌC THEO selectedDishIds nếu có
+        List<CartItem> selectedItems;
+        if (selectedDishIds != null && !selectedDishIds.isEmpty()) {
+            selectedItems = cartItems.stream()
+                    .filter(item -> selectedDishIds.contains(item.getDish().getId()))
+                    .collect(Collectors.toList());
+
+            if (selectedItems.isEmpty()) {
+                throw new RuntimeException("Không tìm thấy món đã chọn trong giỏ hàng.");
+            }
+        } else {
+            // Nếu không truyền dishIds, lấy tất cả
+            selectedItems = cartItems;
+        }
+
+        // ✅ 3. VALIDATE CHỈ MỘT MERCHANT
+        Set<Long> merchantIds = selectedItems.stream()
+                .map(item -> item.getDish().getMerchant().getId())
+                .collect(Collectors.toSet());
+
+        if (merchantIds.size() > 1) {
+            throw new RuntimeException("Chỉ được thanh toán món từ một cửa hàng trong một đơn hàng.");
+        }
+
+        // ✅ 4. Kiểm tra món còn active không
+        for (CartItem item : selectedItems) {
             if (!item.getDish().getIsActive()) {
                 throw new RuntimeException(
                         String.format("Món '%s' hiện không còn bán. Vui lòng xóa khỏi giỏ hàng.",
@@ -64,20 +84,19 @@ public class CheckoutServiceImpl implements CheckoutService {
             }
         }
 
-        // ✅ 4. Lấy thông tin merchant từ món đầu tiên
-        // (Frontend sẽ lọc và chỉ gửi món từ 1 merchant khi tạo order)
-        Merchant merchant = cartItems.get(0).getDish().getMerchant();
+        // ✅ 5. LẤY MERCHANT TỪ SELECTED ITEMS
+        Merchant merchant = selectedItems.get(0).getDish().getMerchant();
 
-        // 5. Lấy danh sách địa chỉ
+        // 6. Lấy danh sách địa chỉ
         List<AddressResponse> addresses = addressService.getAllAddressesByUser(email);
         AddressResponse defaultAddress = addressService.getDefaultAddress(email);
 
-        // 6. Map cart items sang DTO
-        List<CartItemDTO> items = cartItems.stream()
+        // 7. Map SELECTED items sang DTO
+        List<CartItemDTO> items = selectedItems.stream()
                 .map(this::mapCartItemToDTO)
                 .collect(Collectors.toList());
 
-        // 7. Tính toán giá
+        // 8. Tính toán giá
         BigDecimal itemsTotal = items.stream()
                 .map(CartItemDTO::getSubtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -93,10 +112,10 @@ public class CheckoutServiceImpl implements CheckoutService {
                 .add(serviceFee)
                 .add(shippingFee);
 
-        // 8. Lấy danh sách coupon khả dụng
+        // 9. Lấy danh sách coupon khả dụng
         List<CheckoutResponse.CouponInfo> availableCoupons = getAvailableCoupons(merchant.getId(), itemsTotal);
 
-        // 9. Tính tổng số món
+        // 10. Tính tổng số món
         Integer totalItems = items.stream()
                 .mapToInt(CartItemDTO::getQuantity)
                 .sum();
@@ -123,8 +142,8 @@ public class CheckoutServiceImpl implements CheckoutService {
 
     @Override
     @Transactional(readOnly = true)
-    public CheckoutResponse applyDiscount(String email, String couponCode) {
-        CheckoutResponse checkoutInfo = getCheckoutInfo(email);
+    public CheckoutResponse applyDiscount(String email, String couponCode, List<Long> selectedDishIds) {
+        CheckoutResponse checkoutInfo = getCheckoutInfo(email, selectedDishIds);
 
         if (couponCode == null || couponCode.trim().isEmpty()) {
             return checkoutInfo;
@@ -216,6 +235,7 @@ public class CheckoutServiceImpl implements CheckoutService {
     }
 
     private CartItemDTO mapCartItemToDTO(CartItem item) {
+        Merchant merchant = item.getDish().getMerchant();
         String firstImage = extractFirstImageUrl(item.getDish().getImagesUrls());
 
         return CartItemDTO.builder()
@@ -226,6 +246,9 @@ public class CheckoutServiceImpl implements CheckoutService {
                 .price(item.getPrice())
                 .quantity(item.getQuantity())
                 .subtotal(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .merchantId(merchant.getId())
+                .merchantName(merchant.getRestaurantName())
+                .merchantAddress(merchant.getAddress())
                 .build();
     }
 

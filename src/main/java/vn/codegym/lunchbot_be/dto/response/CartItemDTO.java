@@ -19,4 +19,8 @@ public class CartItemDTO {
     private BigDecimal price;
     private Integer quantity;
     private BigDecimal subtotal;
+
+    private Long merchantId;
+    private String merchantName;
+    private String merchantAddress;
 }

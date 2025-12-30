@@ -16,11 +16,11 @@ public interface OrderService {
     /**
      * Lấy thông tin checkout (wrapper cho CheckoutService)
      */
-    CheckoutResponse getCheckoutInfo(String email);
+    CheckoutResponse getCheckoutInfo(String email, List<Long> selectedDishIds);
     /**
      * Áp dụng mã giảm giá (wrapper cho CheckoutService)
      */
-    CheckoutResponse applyDiscount(String email, String couponCode);
+    CheckoutResponse applyDiscount(String email, String couponCode, List<Long> selectedDishIds);
 
     OrderResponse createOrder(String email, CheckoutRequest request);
 

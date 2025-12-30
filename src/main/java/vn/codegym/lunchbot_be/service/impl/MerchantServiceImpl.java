@@ -22,6 +22,7 @@ import vn.codegym.lunchbot_be.repository.MerchantRepository;
 import vn.codegym.lunchbot_be.repository.OrderRepository;
 import vn.codegym.lunchbot_be.repository.UserRepository;
 import vn.codegym.lunchbot_be.service.MerchantService;
+import vn.codegym.lunchbot_be.service.PartnerNotificationService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -43,6 +44,8 @@ public class MerchantServiceImpl implements MerchantService {
     private final DishRepository dishRepository;
 
     private final OrderRepository orderRepository;
+
+    private final PartnerNotificationService partnerNotificationService;
 
     private static final BigDecimal PARTNER_REVENUE_THRESHOLD = new BigDecimal("100000000"); // 100 triệu
 
@@ -323,7 +326,7 @@ public class MerchantServiceImpl implements MerchantService {
             throw new IllegalStateException("Bạn đã là đối tác thân thiết rồi.");
         }
 
-        // 2. Tính doanh thu THÁNG HIỆN TẠI (hoặc tháng trước tùy nghiệp vụ, ở đây làm tháng hiện tại)
+        // 2. Tính doanh thu THÁNG HIỆN TẠI
         YearMonth currentMonth = YearMonth.now();
         LocalDateTime startDate = currentMonth.atDay(1).atStartOfDay();
         LocalDateTime endDate = currentMonth.atEndOfMonth().atTime(23, 59, 59);
@@ -332,7 +335,6 @@ public class MerchantServiceImpl implements MerchantService {
                 merchantId, startDate, endDate
         );
 
-        // Xử lý null nếu chưa có đơn nào
         if (currentMonthRevenue == null) {
             currentMonthRevenue = BigDecimal.ZERO;
         }
@@ -349,6 +351,9 @@ public class MerchantServiceImpl implements MerchantService {
         // 4. Cập nhật trạng thái
         merchant.setPartnerStatus(PartnerStatus.PENDING);
         merchantRepository.save(merchant);
+
+        // ✅ 5. GỬI THÔNG BÁO CHO ADMIN
+        partnerNotificationService.notifyAdminNewPartnerRequest(merchant);
     }
 
     @Override // Nhớ khai báo trong Interface MerchantService nữa nhé
@@ -382,6 +387,7 @@ public class MerchantServiceImpl implements MerchantService {
                         .build())
                 .collect(Collectors.toList());
     }
+
     @Override
     @Transactional
     public void approvePartnerRequest(Long merchantId) {
@@ -395,11 +401,13 @@ public class MerchantServiceImpl implements MerchantService {
         // 1. Cập nhật trạng thái
         merchant.setPartnerStatus(PartnerStatus.APPROVED);
 
-        // 2. Cập nhật quyền lợi (VD: Giảm phí sàn)
-        // Giả sử logic: Partner được hưởng mức phí thấp 0.5%
+        // 2. Cập nhật quyền lợi (Giảm phí sàn)
         merchant.setCommissionRate(new BigDecimal("0.005"));
 
         merchantRepository.save(merchant);
+
+        // ✅ 3. GỬI THÔNG BÁO CHO MERCHANT
+        partnerNotificationService.notifyMerchantPartnerApproved(merchant);
     }
 
     @Override
@@ -413,8 +421,9 @@ public class MerchantServiceImpl implements MerchantService {
         }
 
         merchant.setPartnerStatus(PartnerStatus.REJECTED);
-        // Có thể lưu reason vào một bảng log khác hoặc gửi email thông báo
         merchantRepository.save(merchant);
+
+        partnerNotificationService.notifyMerchantPartnerRejected(merchant, reason);
     }
 
     @Override
