@@ -364,12 +364,17 @@ public class MerchantController {
         BigDecimal currentMonthRevenue = merchantService.calculateCurrentMonthRevenue(merchant.getId());
 
         MerchantProfileResponse response = MerchantProfileResponse.builder()
+                .merchantId(merchant.getId())
                 .restaurantName(merchant.getRestaurantName())
                 .address(merchant.getAddress())
                 .phone(merchant.getPhone())
                 .avatarUrl(merchant.getAvatarUrl())
+                .openTime(merchant.getOpenTime())
+                .closeTime(merchant.getCloseTime())
                 .partnerStatus(merchant.getPartnerStatus())
                 .currentMonthRevenue(currentMonthRevenue)
+                .currentBalance(merchant.getCurrentBalance())
+                .revenueTotal(merchant.getRevenueTotal())
                 .build();
 
         return ResponseEntity.ok(response);

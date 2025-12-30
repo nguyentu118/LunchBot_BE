@@ -9,6 +9,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.codegym.lunchbot_be.dto.request.CheckoutRequest;
+import vn.codegym.lunchbot_be.dto.request.SepayWebhookDTO;
 import vn.codegym.lunchbot_be.dto.response.*;
 import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
 import vn.codegym.lunchbot_be.model.*;
@@ -625,6 +626,59 @@ public class OrderServiceImpl implements OrderService {
                 .totalDiscountGiven(totalDiscount)
                 .orders(orderResponses)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public void processSepayPayment(SepayWebhookDTO webhookData) {
+        String content = webhookData.getTransferContent();
+        BigDecimal amount = webhookData.getTransferAmount();
+
+        // 1. Phân tích nội dung chuyển khoản để lấy Order ID
+        // Giả sử nội dung là: "THANHTOAN DH12345" hoặc "DH 12345"
+        // Ta sẽ dùng Regex để lấy số ra.
+        Long orderId = extractOrderIdFromContent(content);
+
+        if (orderId == null) {
+            log.warn("Không tìm thấy Order ID trong nội dung chuyển khoản: {}", content);
+            return; // Hoặc lưu vào bảng "Giao dịch lạ" để Admin check tay
+        }
+
+        // 2. Tìm đơn hàng
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng không tồn tại: " + orderId));
+
+        // 3. Kiểm tra số tiền (Tránh khách chuyển thiếu)
+        // Lưu ý: So sánh BigDecimal an toàn
+        if (amount.compareTo(order.getTotalAmount()) < 0) {
+            log.warn("Khách chuyển thiếu tiền! Đơn: {}, Cần: {}, Nhận: {}", orderId, order.getTotalAmount(), amount);
+            // Có thể set status là PARTIAL_PAYMENT hoặc giữ nguyên UNPAID tùy logic
+            return;
+        }
+
+        // 4. Cập nhật trạng thái
+        if (order.getPaymentStatus() == PaymentStatus.PENDING) {
+            order.setPaymentStatus(PaymentStatus.PAID);
+
+            // Nếu đơn hàng cần xác nhận ngay khi thanh toán xong
+            // order.setStatus(OrderStatus.CONFIRMED);
+
+            orderRepository.save(order);
+            log.info("Đã thanh toán thành công đơn hàng #{}", orderId);
+        }
+    }
+
+    // Helper: Tách số từ chuỗi
+    private Long extractOrderIdFromContent(String content) {
+        try {
+            // Regex tìm chuỗi số đầu tiên trong nội dung
+            // Ví dụ: "DH123" -> lấy 123
+            String numberOnly = content.replaceAll("[^0-9]", "");
+            if (numberOnly.isEmpty()) return null;
+            return Long.parseLong(numberOnly);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
 

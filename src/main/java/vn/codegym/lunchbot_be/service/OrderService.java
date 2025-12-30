@@ -2,6 +2,7 @@ package vn.codegym.lunchbot_be.service;
 
 import org.springframework.data.domain.Page;
 import vn.codegym.lunchbot_be.dto.request.CheckoutRequest;
+import vn.codegym.lunchbot_be.dto.request.SepayWebhookDTO;
 import vn.codegym.lunchbot_be.dto.response.*;
 import vn.codegym.lunchbot_be.model.Order;
 import vn.codegym.lunchbot_be.model.enums.OrderStatus;
@@ -16,7 +17,6 @@ public interface OrderService {
      * Lấy thông tin checkout (wrapper cho CheckoutService)
      */
     CheckoutResponse getCheckoutInfo(String email);
-
     /**
      * Áp dụng mã giảm giá (wrapper cho CheckoutService)
      */
@@ -48,4 +48,6 @@ public interface OrderService {
     List<OrderResponse> getOrdersByCustomerForMerchant(Long UserId, Long merchantId);
 
     CouponStatisticsResponse getCouponStatistics(Long merchantId, Long couponId);
+
+    void processSepayPayment(SepayWebhookDTO webhookData);
 }

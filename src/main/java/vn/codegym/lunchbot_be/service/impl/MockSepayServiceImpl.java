@@ -63,7 +63,7 @@ public class MockSepayServiceImpl {
 
         response.put("qrCodeUrl", qrUrl);
 
-        // 🎭 Tạo mock transaction
+        //  Tạo mock transaction
         MockTransaction mockTxn = new MockTransaction(
                 txnRef,
                 amount,

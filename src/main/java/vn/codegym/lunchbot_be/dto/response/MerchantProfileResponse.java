@@ -19,4 +19,6 @@ public class MerchantProfileResponse {
     private LocalTime closeTime;
     private PartnerStatus partnerStatus;
     private BigDecimal currentMonthRevenue;
+    private BigDecimal currentBalance;
+    private BigDecimal revenueTotal;
 }

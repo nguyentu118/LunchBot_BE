@@ -24,18 +24,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Optional<Order> findByVnpayTransactionRef(String vnpayTransactionRef);
 
-    List<Order> findByMerchantId(Long merchantId);
-
-    Page<Order> findByMerchantId(Long merchantId, Pageable pageable);
-
-    List<Order> findByStatus(OrderStatus status);
-
-    Page<Order> findByStatus(OrderStatus status, Pageable pageable);
-
-    List<Order> findByUserIdAndStatus(Long userId, OrderStatus status);
-
-    List<Order> findByMerchantIdAndStatus(Long merchantId, OrderStatus status);
-
     Long countByMerchantId(Long merchantId);
 
     Long countByMerchantIdAndStatus(Long merchantId, Enum status);
@@ -159,8 +147,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );
-    // ... các imports
-
     /**
      * Tính tổng doanh thu thực nhận (ItemsTotal - Discount) của Merchant trong khoảng thời gian
      * Chỉ tính đơn hàng COMPLETED
@@ -175,5 +161,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );
+
+    boolean existsByMerchantIdAndStatusIn(Long merchantId, List<OrderStatus> statuses);
+
 }
 

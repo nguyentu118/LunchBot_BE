@@ -88,6 +88,15 @@ public class Merchant {
     @ColumnDefault("0.00001")
     private BigDecimal commissionRate = new BigDecimal("0.00001");
 
+    @Column(name = "bank_name")
+    private String bankName;           // Tên ngân hàng (VD: Vietcombank)
+
+    @Column(name = "bank_account_number")
+    private String bankAccountNumber;  // Số tài khoản
+
+    @Column(name = "bank_account_holder")
+    private String bankAccountHolder;  // Tên chủ tài khoản
+
     @OneToMany(mappedBy = "merchant", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Notification> notifications = new ArrayList<>();
 

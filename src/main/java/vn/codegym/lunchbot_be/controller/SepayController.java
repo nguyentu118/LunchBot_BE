@@ -3,11 +3,14 @@ package vn.codegym.lunchbot_be.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.codegym.lunchbot_be.dto.request.CheckoutRequest;
 import vn.codegym.lunchbot_be.dto.request.OrderInfoDTO;
+import vn.codegym.lunchbot_be.dto.request.SepayWebhookDTO;
 import vn.codegym.lunchbot_be.dto.response.OrderResponse;
 import vn.codegym.lunchbot_be.model.Order;
 import vn.codegym.lunchbot_be.model.enums.PaymentMethod;
@@ -32,7 +35,9 @@ public class SepayController {
     private final MockSepayServiceImpl mockSepayService;
     private final OrderService orderService;
     private final OrderRepository orderRepository;
-    private final ObjectMapper objectMapper;
+
+    @Value("${sepay.api.token:}")
+    private String sepayApiToken;
 
     // ✅ Lưu orderInfo trong memory thay vì session
     private static final Map<String, OrderInfoDTO> pendingOrders = new ConcurrentHashMap<>();
@@ -273,5 +278,35 @@ public class SepayController {
         result.put("count", pendingOrders.size());
         result.put("txnRefs", pendingOrders.keySet());
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/sepay-webhook")
+    public ResponseEntity<?> handleSepayWebhook(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestBody SepayWebhookDTO webhookData
+    ) {
+        try {
+            log.info("Nhận Webhook SePay: {}", webhookData);
+
+            // 1. Bảo mật: Kiểm tra Token (Optional nhưng nên có)
+            // Cấu trúc header SePay gửi: "Bearer <token>"
+            if (sepayApiToken != null && !sepayApiToken.isEmpty()) {
+                if (authorization == null || !authorization.startsWith("Bearer " + sepayApiToken)) {
+                    log.error("Sai SePay API Token!");
+                    return ResponseEntity.status(403).body("Unauthorized");
+                }
+            }
+
+            // 2. Xử lý logic
+            orderService.processSepayPayment(webhookData);
+
+            // 3. Phản hồi cho SePay biết đã nhận tin (Bắt buộc trả về 200 OK)
+            return ResponseEntity.ok(Map.of("success", true));
+
+        } catch (Exception e) {
+            log.error("Lỗi xử lý webhook: ", e);
+            // Vẫn trả về 200 để SePay không gọi lại (retry) gây spam, nhưng ghi log để Admin check
+            return ResponseEntity.ok(Map.of("success", false, "error", e.getMessage()));
+        }
     }
 }
