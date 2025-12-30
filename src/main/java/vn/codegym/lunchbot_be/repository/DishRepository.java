@@ -25,12 +25,11 @@ public interface DishRepository extends JpaRepository<Dish, Long> {
     @Query(value = "SELECT d FROM Dish d WHERE d.isRecommended = true AND d.isActive = true ORDER BY d.orderCount DESC LIMIT 8")
     List<Dish> findTop8SuggestedDishes();
 
-    // --- [TASK 41] Method MỚI: Lấy top 8 món ăn giảm giá nhiều nhất ---
     @Query(value = "SELECT d FROM Dish d " +
             "WHERE d.discountPrice IS NOT NULL " +
             "AND d.isActive = true " +
             "AND d.discountPrice < d.price " +
-            "ORDER BY (d.price - d.discountPrice) / d.price DESC " + // Sắp xếp theo (Giá gốc - Giá giảm) / Giá gốc DESC
+            "ORDER BY (d.price - d.discountPrice) / d.price DESC " +
             "LIMIT 8")
     List<Dish> findTop8MostDiscountedDishes();
 
@@ -84,7 +83,6 @@ public interface DishRepository extends JpaRepository<Dish, Long> {
     List<Dish> searchDishes(@Param("name") String name,
                             @Param("categoryName") String categoryName);
 
-
     Page<Dish> findByIsActiveTrueOrderByViewCountDesc(Pageable pageable);
 
     @Query("SELECT d FROM Dish d " +
@@ -107,4 +105,82 @@ public interface DishRepository extends JpaRepository<Dish, Long> {
     Page<Dish> findActiveDishesByMerchant(@Param("merchantId") Long merchantId, Pageable pageable);
 
     List<Dish> findByMerchantIdAndIsActiveTrue(Long merchantId);
+
+    // ✅ CẢI THIỆN: Sort discount theo nhiều tiêu chí
+    @Query("SELECT d FROM Dish d " +
+            "WHERE d.isActive = true " +
+            "AND d.discountPrice IS NOT NULL " +
+            "AND d.discountPrice < d.price " +
+            "AND (:keyword IS NULL OR :keyword = '' OR " +
+            "     LOWER(d.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "     LOWER(d.merchant.restaurantName) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "ORDER BY (d.price - d.discountPrice) / d.price DESC")
+    Page<Dish> findDiscountedDishesOrderByDiscountDesc(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT d FROM Dish d " +
+            "WHERE d.isActive = true " +
+            "AND d.discountPrice IS NOT NULL " +
+            "AND d.discountPrice < d.price " +
+            "AND (:keyword IS NULL OR :keyword = '' OR " +
+            "     LOWER(d.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "     LOWER(d.merchant.restaurantName) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "ORDER BY (d.price - d.discountPrice) / d.price ASC")
+    Page<Dish> findDiscountedDishesOrderByDiscountAsc(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT d FROM Dish d " +
+            "WHERE d.isActive = true " +
+            "AND d.discountPrice IS NOT NULL " +
+            "AND d.discountPrice < d.price " +
+            "AND (:keyword IS NULL OR :keyword = '' OR " +
+            "     LOWER(d.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "     LOWER(d.merchant.restaurantName) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "ORDER BY d.discountPrice ASC")
+    Page<Dish> findDiscountedDishesOrderByPriceAsc(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT d FROM Dish d " +
+            "WHERE d.isActive = true " +
+            "AND d.discountPrice IS NOT NULL " +
+            "AND d.discountPrice < d.price " +
+            "AND (:keyword IS NULL OR :keyword = '' OR " +
+            "     LOWER(d.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "     LOWER(d.merchant.restaurantName) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "ORDER BY d.discountPrice DESC")
+    Page<Dish> findDiscountedDishesOrderByPriceDesc(@Param("keyword") String keyword, Pageable pageable);
+
+    // ✅ CẢI THIỆN: Sort suggested theo nhiều tiêu chí
+    @Query("SELECT d FROM Dish d " +
+            "WHERE d.isActive = true " +
+            "AND d.isRecommended = true " +
+            "AND (:keyword IS NULL OR :keyword = '' OR " +
+            "     LOWER(d.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "     LOWER(d.merchant.restaurantName) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "ORDER BY d.orderCount DESC, d.viewCount DESC")
+    Page<Dish> findRecommendedDishesOrderByOrderCount(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT d FROM Dish d " +
+            "WHERE d.isActive = true " +
+            "AND d.isRecommended = true " +
+            "AND (:keyword IS NULL OR :keyword = '' OR " +
+            "     LOWER(d.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "     LOWER(d.merchant.restaurantName) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "ORDER BY d.viewCount DESC, d.orderCount DESC")
+    Page<Dish> findRecommendedDishesOrderByViewCount(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT d FROM Dish d " +
+            "WHERE d.isActive = true " +
+            "AND d.isRecommended = true " +
+            "AND (:keyword IS NULL OR :keyword = '' OR " +
+            "     LOWER(d.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "     LOWER(d.merchant.restaurantName) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "ORDER BY COALESCE(d.discountPrice, d.price) ASC")
+    Page<Dish> findRecommendedDishesOrderByPriceAsc(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT d FROM Dish d " +
+            "WHERE d.isActive = true " +
+            "AND d.isRecommended = true " +
+            "AND (:keyword IS NULL OR :keyword = '' OR " +
+            "     LOWER(d.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "     LOWER(d.merchant.restaurantName) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "ORDER BY COALESCE(d.discountPrice, d.price) DESC")
+    Page<Dish> findRecommendedDishesOrderByPriceDesc(@Param("keyword") String keyword, Pageable pageable);
 }

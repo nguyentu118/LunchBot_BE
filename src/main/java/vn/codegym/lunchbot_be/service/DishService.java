@@ -2,6 +2,7 @@ package vn.codegym.lunchbot_be.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
 import vn.codegym.lunchbot_be.dto.request.DishCreateRequest;
 import vn.codegym.lunchbot_be.dto.request.DishSearchRequest;
 import vn.codegym.lunchbot_be.dto.response.DishDetailResponse;
@@ -13,6 +14,7 @@ import vn.codegym.lunchbot_be.model.Dish;
 import java.math.BigDecimal;
 import java.util.List;
 
+@Service
 public interface DishService {
     Dish createNewDish(DishCreateRequest request, String username);
 
@@ -39,4 +41,16 @@ public interface DishService {
     List<DishSearchResponse> quickSearchDishes(String name, String category);
 
     Page<DishSearchResponse> searchDishes(DishSearchRequest request);
+
+    Page<DishDiscountResponse> getAllDiscountedDishesWithPagination(
+            String keyword,
+            String sortBy,
+            Pageable pageable
+    );
+
+    Page<SuggestedDishResponse> getAllSuggestedDishesWithPagination(
+            String keyword,
+            String sortBy,
+            Pageable pageable
+    );
 }

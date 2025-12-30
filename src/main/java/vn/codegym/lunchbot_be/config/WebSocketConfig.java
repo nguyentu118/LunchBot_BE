@@ -14,7 +14,6 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
@@ -27,7 +26,7 @@ import java.util.Collection;
 @EnableWebSocketMessageBroker
 @Order(Ordered.HIGHEST_PRECEDENCE + 99)
 @RequiredArgsConstructor
-@Slf4j // ✅ Thêm Slf4j logging thay vì System.out
+@Slf4j
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final JwtUtil jwtUtil;
@@ -53,41 +52,62 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
                 StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-                if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
-                    String authHeader = accessor.getFirstNativeHeader("Authorization");
+                if (accessor != null) {
+                    StompCommand command = accessor.getCommand();
 
-                    if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                        String token = authHeader.substring(7);
+                    // ✅ Log CONNECT command
+                    if (StompCommand.CONNECT.equals(command)) {
+                        String authHeader = accessor.getFirstNativeHeader("Authorization");
 
-                        try {
-                            if (jwtUtil.validateToken(token)) {
-                                String email = jwtUtil.extractEmail(token);
-                                Long userId = jwtUtil.extractUserId(token); // ✅ Lấy userId
-                                Collection<? extends GrantedAuthority> authorities =
-                                        jwtUtil.getAuthorities(token);
+                        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                            String token = authHeader.substring(7);
 
-                                // Tạo Authentication object
-                                UsernamePasswordAuthenticationToken authentication =
-                                        new UsernamePasswordAuthenticationToken(email, null, authorities);
+                            try {
+                                if (jwtUtil.validateToken(token)) {
+                                    String email = jwtUtil.extractEmail(token);
+                                    Long userId = jwtUtil.extractUserId(token);
+                                    Collection<? extends GrantedAuthority> authorities =
+                                            jwtUtil.getAuthorities(token);
 
-                                // ✅ LƯU userId vào details để dùng sau
-                                authentication.setDetails(userId);
+                                    UsernamePasswordAuthenticationToken authentication =
+                                            new UsernamePasswordAuthenticationToken(email, null, authorities);
+                                    authentication.setDetails(userId);
+                                    accessor.setUser(authentication);
 
-                                accessor.setUser(authentication);
-
-                                log.info("✅ WebSocket authenticated - User: {}, UserId: {}, Roles: {}",
-                                        email, userId, authorities);
-                            } else {
-                                log.warn("❌ Invalid JWT token - Connection rejected");
-                                return null; // Reject connection
+                                } else {
+                                    return null;
+                                }
+                            } catch (Exception e) {
+                                return null;
                             }
-                        } catch (Exception e) {
-                            log.error("❌ JWT authentication failed: {}", e.getMessage());
-                            return null; // Reject connection
+                        } else {
+                            return null;
                         }
-                    } else {
-                        log.warn("❌ No Authorization header - Connection rejected");
-                        return null; // Reject connection
+                    }
+
+                    // ✅ Log SUBSCRIBE command
+                    else if (StompCommand.SUBSCRIBE.equals(command)) {
+                        String destination = accessor.getDestination();
+                        String user = accessor.getUser() != null ? accessor.getUser().getName() : "unknown";
+                        String subscriptionId = accessor.getSubscriptionId();
+
+                    }
+
+                    // ✅ Log UNSUBSCRIBE command
+                    else if (StompCommand.UNSUBSCRIBE.equals(command)) {
+                        String user = accessor.getUser() != null ? accessor.getUser().getName() : "unknown";
+                        String subscriptionId = accessor.getSubscriptionId();
+                    }
+
+                    // ✅ Log DISCONNECT command
+                    else if (StompCommand.DISCONNECT.equals(command)) {
+                        String user = accessor.getUser() != null ? accessor.getUser().getName() : "unknown";
+                    }
+
+                    // ✅ Log MESSAGE/SEND commands
+                    else if (StompCommand.SEND.equals(command)) {
+                        String destination = accessor.getDestination();
+                        String user = accessor.getUser() != null ? accessor.getUser().getName() : "unknown";
                     }
                 }
 

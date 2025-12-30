@@ -3,6 +3,8 @@ package vn.codegym.lunchbot_be.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -36,6 +38,22 @@ public class MerchantController {
     private final CouponServiceImpl couponService;
 
     private final OrderService orderService;
+
+    @GetMapping("/all")
+    public ResponseEntity<?> getAllMerchants(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+            Page<MerchantResponseDTO> merchantsPage = merchantService.getAllMerchantsWithPagination(pageable, keyword);
+            return ResponseEntity.ok(merchantsPage);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Lỗi khi lấy danh sách cửa hàng: " + e.getMessage()));
+        }
+    }
 
 
     @GetMapping("/current/id")

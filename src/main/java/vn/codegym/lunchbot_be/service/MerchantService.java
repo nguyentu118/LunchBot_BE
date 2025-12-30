@@ -1,8 +1,12 @@
 package vn.codegym.lunchbot_be.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import vn.codegym.lunchbot_be.dto.response.DishResponse;
 import vn.codegym.lunchbot_be.dto.response.MerchantProfileResponse;
+import vn.codegym.lunchbot_be.dto.response.MerchantResponseDTO;
 import vn.codegym.lunchbot_be.dto.response.PopularMerchantDto;
+import vn.codegym.lunchbot_be.model.Coupon;
 import vn.codegym.lunchbot_be.model.Merchant;
 
 import java.math.BigDecimal;
@@ -32,4 +36,7 @@ public interface MerchantService {
 
     // Admin: Từ chối yêu cầu
     void rejectPartnerRequest(Long merchantId, String reason);
+
+    Page<MerchantResponseDTO> getAllMerchantsWithPagination(Pageable pageable, String status);
+
 }

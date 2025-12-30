@@ -78,6 +78,8 @@ public class SecurityConfig {
                                 "/api/dishes/{dishId}",
                                 "/api/merchants/profile/{merchantId}",
                                 "api/payment/**",
+                                "api/merchants/all",
+                                "api/coupons/all-grouped",
                                 "/api/dishes/{dishId}/related",
                                 "api/dishes/list",
                                 "api/merchants/profile/{id}/dishes",

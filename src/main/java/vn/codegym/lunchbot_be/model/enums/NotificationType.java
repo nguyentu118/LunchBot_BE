@@ -27,5 +27,10 @@ public enum NotificationType {
     SYSTEM_MAINTENANCE,     // Bảo trì hệ thống
 
     // Thông báo khác
-    GENERAL                 // Thông báo chung
+    GENERAL,                 // Thông báo chung
+
+    RECONCILIATION_REQUEST_CREATED,    // Merchant tạo yêu cầu mới
+    RECONCILIATION_REQUEST_APPROVED,   // Admin approve
+    RECONCILIATION_REQUEST_REJECTED,   // Admin reject
+    RECONCILIATION_CLAIM_SUBMITTED,    // Merchant báo cáo sai sót
 }

@@ -126,4 +126,15 @@ public interface MerchantRepository extends JpaRepository<Merchant, Long> {
     List<String> findRawImageJsonByMerchantId(@Param("merchantId") Long merchantId);
 
     List<Merchant> findByPartnerStatus(PartnerStatus partnerStatus);
+
+    Page<Merchant> findAllByOrderByIdDesc(Pageable pageable);
+
+    // Tìm kiếm theo keyword
+    @Query("SELECT m FROM Merchant m WHERE " +
+            "LOWER(m.restaurantName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(m.address) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(m.phone) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(m.user.email) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "ORDER BY m.id DESC")
+    Page<Merchant> searchMerchantsWithPagination(@Param("keyword") String keyword, Pageable pageable);
 }

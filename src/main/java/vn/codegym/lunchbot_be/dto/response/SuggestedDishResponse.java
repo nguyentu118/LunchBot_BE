@@ -25,6 +25,9 @@ public class SuggestedDishResponse {
 
     private String couponCode;
 
+    private Integer viewCount;
+    private Integer orderCount;
+
     public static SuggestedDishResponse fromEntity(Dish dish) {
         // Xử lý lấy ảnh đầu tiên từ chuỗi JSON (ví dụ đơn giản, bạn có thể cần thư viện JSON)
         String firstImageUrl = (dish.getImagesUrls() != null && dish.getImagesUrls().contains("["))

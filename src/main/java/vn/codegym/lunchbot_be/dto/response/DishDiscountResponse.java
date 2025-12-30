@@ -20,6 +20,8 @@ public class DishDiscountResponse {
     private BigDecimal discountPercentage; // % giảm giá (đã tính toán)
     private String couponCode; // coupon neu co
 
+
+
     public static DishDiscountResponse fromEntity(Dish dish) {
         // Xử lý lấy ảnh đầu tiên từ chuỗi JSON (ví dụ đơn giản, bạn có thể cần thư viện JSON)
         String firstImageUrl = (dish.getImagesUrls() != null && dish.getImagesUrls().contains("["))

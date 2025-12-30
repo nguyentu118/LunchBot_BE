@@ -2,6 +2,7 @@ package vn.codegym.lunchbot_be.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -169,18 +170,14 @@ public class DishServiceImpl implements DishService {
         Dish currentDish = dishRepository.findById(dishId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy món ăn"));
 
-        // ✅ Lấy danh sách categories (Many-to-Many)
         Set<Category> categories = currentDish.getCategories();
 
-        // Nếu món ăn không có category nào
         if (categories == null || categories.isEmpty()) {
             return new ArrayList<>();
         }
 
-        // ✅ Lấy category đầu tiên (hoặc có thể lấy tất cả)
         Category primaryCategory = categories.iterator().next();
 
-        // ✅ Tìm các dish khác có cùng category này
         List<Dish> relatedDishes = dishRepository
                 .findByCategoriesContainingAndIsActiveTrueAndIdNot(primaryCategory, dishId, PageRequest.of(0, 8))
                 .getContent();
@@ -249,6 +246,63 @@ public class DishServiceImpl implements DishService {
                 .restaurantName(dish.getMerchant().getRestaurantName())
                 .isRecommended(dish.getIsRecommended())
                 .build();
+    }
+
+    @Override
+    public Page<DishDiscountResponse> getAllDiscountedDishesWithPagination(
+            String keyword,
+            String sortBy,
+            Pageable pageable) {
+
+        Page<Dish> dishPage;
+        String searchKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
+
+        switch (sortBy.toLowerCase()) {
+            case "discount_asc":
+                dishPage = dishRepository.findDiscountedDishesOrderByDiscountAsc(searchKeyword, pageable);
+                break;
+            case "price_asc":
+                dishPage = dishRepository.findDiscountedDishesOrderByPriceAsc(searchKeyword, pageable);
+                break;
+            case "price_desc":
+                dishPage = dishRepository.findDiscountedDishesOrderByPriceDesc(searchKeyword, pageable);
+                break;
+            case "discount_desc":
+            default:
+                dishPage = dishRepository.findDiscountedDishesOrderByDiscountDesc(searchKeyword, pageable);
+                break;
+        }
+
+        return dishPage.map(DishDiscountResponse::fromEntity);
+    }
+
+    @Override
+    public Page<SuggestedDishResponse> getAllSuggestedDishesWithPagination(
+            String keyword,
+            String sortBy,
+            Pageable pageable) {
+
+        Page<Dish> dishPage;
+        String searchKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
+
+        switch (sortBy.toLowerCase()) {
+            case "view_count_desc":
+                dishPage = dishRepository.findRecommendedDishesOrderByViewCount(searchKeyword, pageable);
+                break;
+            case "price_asc":
+                dishPage = dishRepository.findRecommendedDishesOrderByPriceAsc(searchKeyword, pageable);
+                break;
+            case "price_desc":
+                dishPage = dishRepository.findRecommendedDishesOrderByPriceDesc(searchKeyword, pageable);
+                break;
+            case "order_count_desc":
+            default:
+                dishPage = dishRepository.findRecommendedDishesOrderByOrderCount(searchKeyword, pageable);
+                break;
+        }
+
+        // ✅ Convert sang DTO
+        return dishPage.map(SuggestedDishResponse::fromEntity);
     }
 
 }

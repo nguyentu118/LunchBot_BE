@@ -8,17 +8,16 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import vn.codegym.lunchbot_be.dto.request.DishCreateRequest;
 import vn.codegym.lunchbot_be.dto.request.DishSearchRequest;
 import vn.codegym.lunchbot_be.dto.response.*;
-import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
 import vn.codegym.lunchbot_be.model.Category;
 import vn.codegym.lunchbot_be.model.Dish;
 import vn.codegym.lunchbot_be.service.DishService;
+import vn.codegym.lunchbot_be.service.impl.DishServiceImpl;
 import vn.codegym.lunchbot_be.service.impl.MerchantServiceImpl;
 import vn.codegym.lunchbot_be.service.impl.UserDetailsImpl;
 
@@ -28,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
 
 @RestController
 @RequestMapping("/api/dishes")
@@ -310,5 +308,69 @@ public class DishController {
     ) {
         List<DishSearchResponse> results = dishService.quickSearchDishes(name, categoryName);
         return ResponseEntity.ok(results);
+    }
+
+    @GetMapping("/all-discounts")
+    public ResponseEntity<?> getAllDiscountedDishes(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(defaultValue = "discount_desc") String sortBy
+    ) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+            Page<DishDiscountResponse> discountedDishes = dishService.getAllDiscountedDishesWithPagination(
+                    keyword,
+                    sortBy,
+                    pageable
+            );
+
+            return ResponseEntity.ok(Map.of(
+                    "content", discountedDishes.getContent(),
+                    "currentPage", discountedDishes.getNumber(),
+                    "totalPages", discountedDishes.getTotalPages(),
+                    "totalElements", discountedDishes.getTotalElements(),
+                    "pageSize", discountedDishes.getSize(),
+                    "hasNext", discountedDishes.hasNext(),
+                    "hasPrevious", discountedDishes.hasPrevious()
+            ));
+
+        } catch (Exception e) {
+            System.err.println("Lỗi khi tải danh sách món giảm giá: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi hệ thống khi tải danh sách món giảm giá."));
+        }
+    }
+
+    @GetMapping("/all-suggested")
+    public ResponseEntity<?> getAllSuggestedDishes(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(defaultValue = "order_count_desc") String sortBy
+    ) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+            Page<SuggestedDishResponse> suggestedDishes = dishService.getAllSuggestedDishesWithPagination(
+                    keyword,
+                    sortBy,
+                    pageable
+            );
+
+            return ResponseEntity.ok(Map.of(
+                    "content", suggestedDishes.getContent(),
+                    "currentPage", suggestedDishes.getNumber(),
+                    "totalPages", suggestedDishes.getTotalPages(),
+                    "totalElements", suggestedDishes.getTotalElements(),
+                    "pageSize", suggestedDishes.getSize(),
+                    "hasNext", suggestedDishes.hasNext(),
+                    "hasPrevious", suggestedDishes.hasPrevious()
+            ));
+
+        } catch (Exception e) {
+            System.err.println("Lỗi khi tải danh sách món đề xuất: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi hệ thống khi tải danh sách món đề xuất."));
+        }
     }
 }

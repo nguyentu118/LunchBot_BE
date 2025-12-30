@@ -2,6 +2,7 @@ package vn.codegym.lunchbot_be.service.impl;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -414,5 +415,42 @@ public class MerchantServiceImpl implements MerchantService {
         merchant.setPartnerStatus(PartnerStatus.REJECTED);
         // Có thể lưu reason vào một bảng log khác hoặc gửi email thông báo
         merchantRepository.save(merchant);
+    }
+
+    @Override
+    public Page<MerchantResponseDTO> getAllMerchantsWithPagination(
+            Pageable pageable,
+            String keyword
+    ) {
+        Page<Merchant> merchantsPage;
+
+        // Kiểm tra có keyword không
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            // Tìm kiếm theo keyword
+            merchantsPage = merchantRepository.searchMerchantsWithPagination(
+                    keyword.trim(),
+                    pageable
+            );
+        } else {
+            // Lấy tất cả
+            merchantsPage = merchantRepository.findAllByOrderByIdDesc(pageable);
+        }
+
+        // Chuyển đổi Page<Merchant> sang Page<MerchantResponseDTO>
+        return merchantsPage.map(this::convertToDTO);
+    }
+
+    // Helper method để convert Entity sang DTO
+    private MerchantResponseDTO convertToDTO(Merchant merchant) {
+        return MerchantResponseDTO.builder()
+                .id(merchant.getId())
+                .restaurantName(merchant.getRestaurantName())
+                .avatarUrl(merchant.getAvatarUrl())
+                .address(merchant.getAddress())
+                .phone(merchant.getPhone())
+                .email(merchant.getUser() != null ? merchant.getUser().getEmail() : null)
+                .openTime(merchant.getOpenTime() != null ? merchant.getOpenTime().toString() : null)
+                .closeTime(merchant.getCloseTime() != null ? merchant.getCloseTime().toString() : null)
+                .build();
     }
 }
