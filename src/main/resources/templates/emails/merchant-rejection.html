@@ -41,17 +41,27 @@
         </ol>
 
         <div style="text-align: center; margin: 30px 0;">
-            <a th:href="${appUrl + '/merchant/register'}" class="button">
+            <a th:href="${'http://localhost:5173' + '/register-merchant'}" class="button" style="color: white">
                 Đăng ký lại
             </a>
         </div>
 
         <p>Nếu bạn có bất kỳ câu hỏi nào về quyết định này, vui lòng liên hệ với chúng tôi qua email:
-            <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}" style="color: #F08080;">support email</a></p>
+            <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}" style="color: #F08080;">suportLunchbot@gmail.com</a></p>
     </div>
     <div class="footer">
-        <p>Email này được gửi tự động từ hệ thống <strong th:text="${appName}">App Name</strong>.</p>
-        <p>Ngày gửi: <span th:text="${currentDate}">Date</span></p>
+        <p>
+            Email được gửi tự động từ
+            <span th:text="${appName}">App Name</span>
+            vào
+            <span th:text="${#dates.format(currentDate, 'dd/MM/yyyy HH:mm')}">Date</span>
+        </p>
+
+        <p>
+            © <span th:text="${#dates.year(#dates.createNow())}"></span>
+            <span th:text="${appName}">App Name</span>.
+            All rights reserved.
+        </p>
     </div>
 </div>
 </body>

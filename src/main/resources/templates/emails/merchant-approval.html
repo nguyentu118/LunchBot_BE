@@ -47,8 +47,18 @@
   </div>
 
   <div class="footer">
-    <p>Email được gửi tự động từ <span th:text="${appName}">App Name</span> vào <span th:text="${currentDate}">Date</span></p>
-    <p>© 2024 <span th:text="${appName}">App Name</span>. All rights reserved.</p>
+    <p>
+      Email được gửi tự động từ
+      <span th:text="${appName}">App Name</span>
+      vào
+      <span th:text="${#dates.format(currentDate, 'dd/MM/yyyy HH:mm')}">Date</span>
+    </p>
+
+    <p>
+      © <span th:text="${#dates.year(#dates.createNow())}"></span>
+      <span th:text="${appName}">App Name</span>.
+      All rights reserved.
+    </p>
   </div>
 </div>
 </body>

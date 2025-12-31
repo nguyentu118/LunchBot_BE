@@ -118,7 +118,14 @@ public class OrderServiceImpl implements OrderService {
 
         // 5. Tính toán giá
         BigDecimal itemsTotal = itemsToOrder.stream()
-                .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .map(item -> {
+                    BigDecimal discountPrice = item.getDish().getDiscountPrice() != null
+                            ? item.getDish().getDiscountPrice()
+                            : item.getPrice(); // Nếu không có discount thì lấy giá gốc
+
+                    // Tính tổng tiền cho item này
+                    return discountPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
+                })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal serviceFee = checkoutService.calculateServiceFee(itemsTotal);
@@ -206,14 +213,18 @@ public class OrderServiceImpl implements OrderService {
             Dish dish = cartItem.getDish();
             String firstImage = extractFirstImageUrl(dish.getImagesUrls());
 
+            BigDecimal unitPrice = dish.getDiscountPrice() != null
+                    ? dish.getDiscountPrice()
+                    : cartItem.getPrice();
+
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
                     .dishId(dish.getId())
                     .dishName(dish.getName())
                     .dishImage(firstImage)
                     .quantity(cartItem.getQuantity())
-                    .unitPrice(cartItem.getPrice())
-                    .totalPrice(cartItem.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())))
+                    .unitPrice(unitPrice)
+                    .totalPrice(unitPrice.multiply(BigDecimal.valueOf(cartItem.getQuantity())))
                     .merchantId(merchant.getId())
                     .merchantName(merchant.getRestaurantName())
                     .build();

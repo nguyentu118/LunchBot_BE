@@ -116,8 +116,18 @@
 
     <!-- Footer -->
     <div class="footer">
-        <p>Đây là email tự động từ hệ thống. Vui lòng không trả lời email này.</p>
-        <p th:text="${appName}">LunchBot</p>
+        <p>
+            Email được gửi tự động từ
+            <span th:text="${appName}">App Name</span>
+            vào
+            <span th:text="${#dates.format(currentDate, 'dd/MM/yyyy HH:mm')}">Date</span>
+        </p>
+
+        <p>
+            © <span th:text="${#dates.year(#dates.createNow())}"></span>
+            <span th:text="${appName}">App Name</span>.
+            All rights reserved.
+        </p>
     </div>
 </div>
 </body>

@@ -238,14 +238,19 @@ public class CheckoutServiceImpl implements CheckoutService {
         Merchant merchant = item.getDish().getMerchant();
         String firstImage = extractFirstImageUrl(item.getDish().getImagesUrls());
 
+        BigDecimal discountPrice = item.getDish().getDiscountPrice() != null
+                ? item.getDish().getDiscountPrice()
+                : item.getPrice();
+
         return CartItemDTO.builder()
                 .id(item.getId())
                 .dishId(item.getDish().getId())
                 .dishName(item.getDish().getName())
                 .dishImage(firstImage)
                 .price(item.getPrice())
+                .discountPrice(discountPrice)
                 .quantity(item.getQuantity())
-                .subtotal(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .subtotal(discountPrice.multiply(BigDecimal.valueOf(item.getQuantity())))
                 .merchantId(merchant.getId())
                 .merchantName(merchant.getRestaurantName())
                 .merchantAddress(merchant.getAddress())

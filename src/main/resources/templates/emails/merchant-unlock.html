@@ -70,13 +70,23 @@
         </div>
 
         <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email:
-            <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}" style="color: #F08080;">support email</a>
+            <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}" style="color: #F08080;">suportLunchbot@gmail.com</a>
         </p>
     </div>
 
     <div class="footer">
-        <p>Email được gửi tự động từ <span th:text="${appName}">App Name</span> vào <span th:text="${currentDate}">Date</span></p>
-        <p>© 2024 <span th:text="${appName}">App Name</span>. All rights reserved.</p>
+        <p>
+            Email được gửi tự động từ
+            <span th:text="${appName}">App Name</span>
+            vào
+            <span th:text="${#dates.format(currentDate, 'dd/MM/yyyy HH:mm')}">Date</span>
+        </p>
+
+        <p>
+            © <span th:text="${#dates.year(#dates.createNow())}"></span>
+            <span th:text="${appName}">App Name</span>.
+            All rights reserved.
+        </p>
     </div>
 </div>
 </body>

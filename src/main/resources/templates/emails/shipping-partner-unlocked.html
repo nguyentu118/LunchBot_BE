@@ -132,8 +132,18 @@
     </div>
 
     <div class="footer">
-        <p>© <span th:text="${currentYear}">2025</span> LunchBot System. Tất cả các quyền được bảo lưu.</p>
-        <p>Đây là email tự động, vui lòng không phản hồi email này.</p>
+        <p>
+            Email được gửi tự động từ
+            <span th:text="${appName}">App Name</span>
+            vào
+            <span th:text="${#dates.format(currentDate, 'dd/MM/yyyy HH:mm')}">Date</span>
+        </p>
+
+        <p>
+            © <span th:text="${#dates.year(#dates.createNow())}"></span>
+            <span th:text="${appName}">App Name</span>.
+            All rights reserved.
+        </p>
     </div>
 </div>
 </body>

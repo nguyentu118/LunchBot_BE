@@ -119,6 +119,7 @@ public class CartServiceImpl implements CartService {
                             .dishName(item.getDish().getName())
                             .dishImage(firstImage)
                             .price(item.getPrice())
+                            .discountPrice(item.getDish().getDiscountPrice())
                             .quantity(item.getQuantity())
                             .subtotal(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                             .build();
@@ -130,7 +131,7 @@ public class CartServiceImpl implements CartService {
                 .sum();
 
         BigDecimal totalPrice = itemDTOs.stream()
-                .map(CartItemDTO::getSubtotal)
+                .map(CartItemDTO::getDiscountPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return CartResponse.builder()

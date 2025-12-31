@@ -17,6 +17,7 @@ public class CartItemDTO {
     private String dishName;
     private String dishImage;
     private BigDecimal price;
+    private BigDecimal discountPrice;
     private Integer quantity;
     private BigDecimal subtotal;
 
