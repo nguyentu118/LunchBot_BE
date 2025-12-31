@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,7 +28,6 @@
             border-bottom: 1px solid #eeeeee;
         }
         .header h1 {
-            /* Thay đổi màu tiêu đề từ #3f51b5 sang #F08080 */
             color: #F08080;
             margin: 0;
             font-size: 24px;
@@ -38,18 +37,23 @@
         }
         .content p {
             margin-bottom: 15px;
+            color: #333333;
         }
         .details {
             background-color: #f9f9f9;
             padding: 15px;
             border-radius: 6px;
-            /* Thay đổi màu đường viền từ #4caf50 sang #F08080 */
             border-left: 5px solid #F08080;
             margin: 20px 0;
         }
+        .details p {
+            margin: 10px 0;
+            color: #333333;
+        }
         .details strong {
             display: inline-block;
-            min-width: 120px;
+            min-width: 150px;
+            color: #333333;
         }
         .footer {
             text-align: center;
@@ -60,38 +64,40 @@
         }
         .button-link {
             display: inline-block;
-            padding: 10px 20px;
+            padding: 12px 30px;
             margin-top: 15px;
-            /* Thay đổi màu nền nút từ #4caf50 sang #F08080 */
             background-color: #F08080;
             color: #ffffff !important;
             text-decoration: none;
             border-radius: 5px;
             font-weight: bold;
         }
+        .button-link:hover {
+            background-color: #E06060;
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1 style="color: #F08080;">🎉 Đăng Ký Thành Công!</h1>
+        <h1>🎉 Đăng Ký Thành Công!</h1>
     </div>
     <div class="content">
-        <p>Xin chào ${fullName},</p>
+        <p>Xin chào <span th:text="${fullName}">Merchant</span>,</p>
         <p>Chúng tôi rất vui mừng thông báo bạn đã đăng ký thành công tài khoản Merchant trên hệ thống <strong>LunchBot</strong>.</p>
 
         <p>Thông tin cơ bản của Merchant của bạn đã được ghi nhận và đang chờ đội ngũ của chúng tôi xem xét.</p>
 
         <div class="details">
-            <p><strong>Tên Cửa hàng:</strong> ${restaurantName}</p>
-            <p><strong>Email đăng nhập:</strong> ${email}</p>
+            <p><strong>Tên Cửa hàng:</strong> <span th:text="${restaurantName}">${restaurantName}</span></p>
+            <p><strong>Email đăng nhập:</strong> <span th:text="${email}" style="color: black">${email}</span></p>
             <p><strong>Vai trò:</strong> MERCHANT</p>
         </div>
 
         <p>Vui lòng click vào nút bên dưới để truy cập vào trang quản lý Merchant của bạn:</p>
 
         <p style="text-align: center;">
-            <a th:href="${appUrl}" class="button-link">
+            <a href="http://localhost:5173/login" class="button-link">
                 Truy Cập Trang Quản Lý
             </a>
         </p>
@@ -100,7 +106,7 @@
         <p>Trân trọng,<br>Đội ngũ LunchBot.</p>
     </div>
     <div class="footer">
-        <p>&copy; ${currentYear} LunchBot. Tất cả quyền được bảo lưu.</p>
+        <p>&copy; <span th:text="${currentYear}">2024</span> LunchBot. Tất cả quyền được bảo lưu.</p>
     </div>
 </div>
 </body>
