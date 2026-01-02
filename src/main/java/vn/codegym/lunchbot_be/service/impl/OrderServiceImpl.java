@@ -29,6 +29,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -652,40 +653,45 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public void processSepayPayment(SepayWebhookDTO webhookData) {
+        // 1. Trích xuất mã giao dịch (txnRef) từ nội dung chuyển khoản
+        // Ví dụ SePay gửi: "THANHTOAN SPY1735622221" -> Cần lấy "SPY1735622221"
         String content = webhookData.getTransferContent();
-        BigDecimal amount = webhookData.getTransferAmount();
-
-        // 1. Phân tích nội dung chuyển khoản để lấy Order ID
-        // Giả sử nội dung là: "THANHTOAN DH12345" hoặc "DH 12345"
-        // Ta sẽ dùng Regex để lấy số ra.
-        Long orderId = extractOrderIdFromContent(content);
-
-        if (orderId == null) {
-            log.warn("Không tìm thấy Order ID trong nội dung chuyển khoản: {}", content);
-            return; // Hoặc lưu vào bảng "Giao dịch lạ" để Admin check tay
-        }
-
-        // 2. Tìm đơn hàng
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng không tồn tại: " + orderId));
-
-        // 3. Kiểm tra số tiền (Tránh khách chuyển thiếu)
-        // Lưu ý: So sánh BigDecimal an toàn
-        if (amount.compareTo(order.getTotalAmount()) < 0) {
-            log.warn("Khách chuyển thiếu tiền! Đơn: {}, Cần: {}, Nhận: {}", orderId, order.getTotalAmount(), amount);
-            // Có thể set status là PARTIAL_PAYMENT hoặc giữ nguyên UNPAID tùy logic
+        if (content == null || !content.contains("SPY")) {
+            log.error("Nội dung chuyển khoản không hợp lệ: {}", content);
             return;
         }
 
-        // 4. Cập nhật trạng thái
-        if (order.getPaymentStatus() == PaymentStatus.PENDING) {
+        String txnRef = content.substring(content.indexOf("SPY")).trim();
+        log.info("Đang xử lý thanh toán cho mã tham chiếu: {}", txnRef);
+
+        // 2. Tìm đơn hàng chờ trong database (Dựa trên vnpayTransactionRef hoặc một trường map tương đương)
+        Optional<Order> orderOpt = orderRepository.findByVnpayTransactionRef(txnRef);
+
+        if (orderOpt.isPresent()) {
+            Order order = orderOpt.get();
+
+            // Kiểm tra nếu đơn hàng đã thanh toán rồi thì bỏ qua (Idempotency)
+            if (order.getPaymentStatus() == PaymentStatus.PAID) {
+                log.warn("Đơn hàng {} đã được thanh toán trước đó.", txnRef);
+                return;
+            }
+
+            // 3. Kiểm tra số tiền (Quan trọng để tránh gian lận)
+            BigDecimal expectedAmount = order.getTotalAmount();
+            if (webhookData.getTransferAmount().compareTo(expectedAmount) < 0) {
+                log.error("Số tiền thanh toán không đủ! Nhận: {}, Cần: {}",
+                        webhookData.getTransferAmount(), expectedAmount);
+                return;
+            }
+
+            // 4. Cập nhật trạng thái đơn hàng
             order.setPaymentStatus(PaymentStatus.PAID);
-
-            // Nếu đơn hàng cần xác nhận ngay khi thanh toán xong
-            // order.setStatus(OrderStatus.CONFIRMED);
-
+            order.setStatus(OrderStatus.CONFIRMED); // Chuyển sang trạng thái đã xác nhận
             orderRepository.save(order);
-            log.info("Đã thanh toán thành công đơn hàng #{}", orderId);
+
+            log.info("Thanh toán thành công cho đơn hàng: {}", order.getOrderNumber());
+        } else {
+            log.error("Không tìm thấy đơn hàng với mã tham chiếu: {}", txnRef);
         }
     }
 
