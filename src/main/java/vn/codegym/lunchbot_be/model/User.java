@@ -65,6 +65,19 @@ public class User {
     private LocalDateTime updatedAt;
 
     private String verificationToken;
+    private LocalDateTime tokenExpiryDate;
+
+    @Column(name = "bank_account_number", length = 50)
+    private String bankAccountNumber; // Số tài khoản: 1234567890
+
+    @Column(name = "bank_name", length = 100)
+    private String bankName; // Tên ngân hàng: Vietcombank, Techcombank, BIDV...
+
+    @Column(name = "bank_account_name", length = 100)
+    private String bankAccountName; // Tên chủ tài khoản: NGUYEN VAN A
+
+    @Column(name = "bank_branch", length = 100)
+    private String bankBranch; // Chi nhánh: CN Hà Nội, CN Đống Đa...
 
     // Relationships
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)

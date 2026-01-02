@@ -156,11 +156,16 @@ public class Order {
         switch (newStatus) {
             case COMPLETED:
                 this.completedAt = LocalDateTime.now();
-                this.paymentStatus = PaymentStatus.PAID;
+                if (this.paymentStatus != PaymentStatus.REFUNDED &&
+                        this.paymentStatus != PaymentStatus.REFUND_PENDING) {
+                    this.paymentStatus = PaymentStatus.PAID;
+                }
                 break;
             case CANCELLED:
                 this.cancelledAt = LocalDateTime.now();
-                this.paymentStatus = PaymentStatus.FAILED;
+                if (this.paymentStatus == PaymentStatus.PENDING) {
+                    this.paymentStatus = PaymentStatus.FAILED;
+                }
                 break;
         }
     }

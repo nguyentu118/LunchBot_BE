@@ -15,6 +15,7 @@ import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
 import vn.codegym.lunchbot_be.model.*;
 import vn.codegym.lunchbot_be.model.enums.CancelledBy;
 import vn.codegym.lunchbot_be.model.enums.OrderStatus;
+import vn.codegym.lunchbot_be.model.enums.PaymentMethod;
 import vn.codegym.lunchbot_be.model.enums.PaymentStatus;
 import vn.codegym.lunchbot_be.repository.*;
 import vn.codegym.lunchbot_be.service.CheckoutService;
@@ -46,6 +47,7 @@ public class OrderServiceImpl implements OrderService {
     private final ShippingPartnerRepository shippingPartnerRepository;
     private final ShippingServiceImpl shippingService;
     private final OrderNotificationService orderNotificationService;
+    private final RefundServiceImpl refundService;
 
 
     @Override
@@ -318,11 +320,33 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Đơn hàng này không thể hủy");
         }
 
-        OrderStatus oldStatus = order.getStatus();
+        // ✅ FIX: Refresh order từ database để lấy dữ liệu mới nhất
+        orderRepository.flush();
+        order = orderRepository.findById(orderId).orElse(order);
 
-        // Cập nhật trạng thái
+        log.info("📋 Order refreshed - Payment Status: {}, Payment Method: {}, Transaction Ref: {}",
+                order.getPaymentStatus(), order.getPaymentMethod(), order.getVnpayTransactionRef());
+
+        OrderStatus oldStatus = order.getStatus();
+        PaymentStatus oldPaymentStatus = order.getPaymentStatus();
+
+        // ✅ FIX: Force PAID status nếu có transaction ref (webhook đã process)
+        // Lý do: Status có thể bị corrupted thành FAILED, nhưng vnpayTransactionRef là đáng tin cậy hơn
+        boolean hasTransactionRef = order.getVnpayTransactionRef() != null &&
+                !order.getVnpayTransactionRef().trim().isEmpty();
+
+        if (hasTransactionRef && order.getPaymentStatus() != PaymentStatus.PAID) {
+            log.warn("⚠️ Order has transaction ref but status is {}. Forcing PAID...", order.getPaymentStatus());
+            order.setPaymentStatus(PaymentStatus.PAID);
+            orderRepository.save(order);
+            log.info("✅ Payment status forced to PAID");
+        }
+
+        // Cập nhật trạng thái đơn hàng
         order.updateStatus(OrderStatus.CANCELLED);
         order.setCancellationReason(reason);
+        order.setCancelledBy(CancelledBy.CUSTOMER);
+        order.setCancelledAt(LocalDateTime.now());
 
         // Hoàn lại usedCount cho coupon (nếu có)
         if (order.getCoupon() != null) {
@@ -331,13 +355,51 @@ public class OrderServiceImpl implements OrderService {
             couponRepository.save(coupon);
         }
 
+        // ✅ Kiểm tra cách khác - dùng vnpayTransactionRef thay vì paymentStatus
+        boolean isCardPayment = order.getPaymentMethod() == PaymentMethod.CARD;
+
+        log.info("💳 Refund check - hasTransactionRef: {}, isCardPayment: {}",
+                hasTransactionRef, isCardPayment);
+
+        // ✅ Tạo hoàn tiền nếu:
+        // 1. Thanh toán bằng CARD
+        // 2. Có transaction ref (tức là đã thanh toán)
+        if (isCardPayment && hasTransactionRef) {
+            log.info("💰 Creating refund request for cancelled order: {}", order.getOrderNumber());
+
+            try {
+                RefundRequest refundRequest = refundService.createRefundRequest(order, reason);
+
+                if (refundRequest != null) {
+                    log.info("✅ Refund request created successfully - ID: {}", refundRequest.getId());
+                } else {
+                    log.warn("⚠️ Refund request not created (order not eligible for refund)");
+                }
+            } catch (Exception e) {
+                log.error("❌ Failed to create refund request: ", e);
+                // ✅ Không throw exception - chỉ log warning
+            }
+        } else {
+            log.info("ℹ️ No refund needed:");
+            if (!isCardPayment) {
+                log.info("   - Payment method: {} (not CARD)", order.getPaymentMethod());
+            }
+            if (!hasTransactionRef) {
+                log.info("   - No transaction ref found (payment not completed)");
+            }
+        }
+
         Order cancelledOrder = orderRepository.save(order);
 
         try {
-            orderNotificationService.notifyOrderStatusChanged(cancelledOrder, oldStatus, OrderStatus.CANCELLED);
-            System.out.println("✅ Sent cancellation notification for order #" + cancelledOrder.getId());
+            orderNotificationService.notifyOrderStatusChanged(
+                    cancelledOrder,
+                    oldStatus,
+                    OrderStatus.CANCELLED
+            );
+            log.info("✅ Sent cancellation notification for order #{}", cancelledOrder.getId());
         } catch (Exception e) {
-            System.err.println("❌ Failed to send notification: " + e.getMessage());
+            log.error("❌ Failed to send notification: ", e.getMessage());
         }
 
         return mapToOrderResponse(cancelledOrder);
@@ -371,25 +433,81 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Bạn không có quyền cập nhật đơn hàng này");
         }
 
+        // ✅ FIX: Refresh order để lấy dữ liệu mới nhất
+        orderRepository.flush();
+        order = orderRepository.findById(orderId).orElse(order);
+
+        log.info("📋 Order refreshed for status update - Payment Status: {}, Transaction Ref: {}",
+                order.getPaymentStatus(), order.getVnpayTransactionRef());
+
         // 2. Validate trạng thái
         validateStatusTransition(order.getStatus(), newStatus);
 
         OrderStatus oldStatus = order.getStatus();
+        PaymentStatus oldPaymentStatus = order.getPaymentStatus();
 
-        // 3. ✅ XỬ LÝ ĐẶC BIỆT KHI MERCHANT HỦY ĐƠN
+        // 3. Xử lý khi merchant hủy đơn
         if (newStatus == OrderStatus.CANCELLED) {
             if (cancelReason == null || cancelReason.trim().isEmpty()) {
                 throw new RuntimeException("Vui lòng cung cấp lý do hủy đơn");
             }
+
             order.setCancelledBy(CancelledBy.MERCHANT);
             order.setCancellationReason(cancelReason);
             order.setCancelledAt(LocalDateTime.now());
 
-            // ✅ Hoàn lại coupon nếu có
+            // Hoàn lại coupon nếu có
             if (order.getCoupon() != null) {
                 Coupon coupon = order.getCoupon();
                 coupon.setUsedCount(coupon.getUsedCount() - 1);
                 couponRepository.save(coupon);
+            }
+
+            // ✅ FIX: Force PAID status nếu có transaction ref
+            boolean hasTransactionRef = order.getVnpayTransactionRef() != null &&
+                    !order.getVnpayTransactionRef().trim().isEmpty();
+
+            if (hasTransactionRef && order.getPaymentStatus() != PaymentStatus.PAID) {
+                log.warn("⚠️ [MERCHANT] Order has transaction ref but status is {}. Forcing PAID...",
+                        order.getPaymentStatus());
+                order.setPaymentStatus(PaymentStatus.PAID);
+                orderRepository.save(order);
+                log.info("✅ Payment status forced to PAID");
+            }
+
+            // ✅ Kiểm tra cách khác - dùng vnpayTransactionRef
+            boolean isCardPayment = order.getPaymentMethod() == PaymentMethod.CARD;
+
+            log.info("💳 [MERCHANT CANCEL] Refund check - hasTransactionRef: {}, isCardPayment: {}",
+                    hasTransactionRef, isCardPayment);
+
+            // ✅ Tạo hoàn tiền nếu:
+            // 1. Thanh toán bằng CARD
+            // 2. Có transaction ref (tức là đã thanh toán)
+            if (isCardPayment && hasTransactionRef) {
+                log.info("💰 [MERCHANT CANCEL] Creating refund request for order: {}",
+                        order.getOrderNumber());
+
+                try {
+                    RefundRequest refundRequest = refundService.createRefundRequest(order, cancelReason);
+
+                    if (refundRequest != null) {
+                        log.info("✅ Refund request created successfully - ID: {}", refundRequest.getId());
+                    } else {
+                        log.warn("⚠️ Refund request not created (order not eligible for refund)");
+                    }
+                } catch (Exception e) {
+                    log.error("❌ Failed to create refund request: ", e);
+                    // Không throw exception - chỉ log warning
+                }
+            } else {
+                log.info("ℹ️ No refund needed:");
+                if (!isCardPayment) {
+                    log.info("   - Payment method: {} (not CARD)", order.getPaymentMethod());
+                }
+                if (!hasTransactionRef) {
+                    log.info("   - No transaction ref found (payment not completed)");
+                }
             }
         }
 
