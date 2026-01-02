@@ -18,6 +18,8 @@ public class CorsConfig {
 
         // Cho phép frontend từ localhost:5173 truy cập
         configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost",        // Thêm dòng này
+                "http://localhost:80",
                 "http://localhost:5173",
                 "http://localhost:3000",
                 "http://127.0.0.1:5173"
