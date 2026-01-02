@@ -307,7 +307,7 @@ public class MerchantServiceImpl implements MerchantService {
                         .description(dish.getDescription())
                         .price(dish.getPrice())
                         .imagesUrls(dish.getImagesUrls())
-                        // Thêm các thuộc tính khác của DishResponse tại đây
+                        .discountPrice(dish.getDiscountPrice())
                         .build())
                 .collect(Collectors.toList());
     }

@@ -1,0 +1,38 @@
+services:
+  # Service Database
+  lunchbot_db:
+    image: mysql:8.0
+    container_name: mysql_lunchbot
+    restart: always
+    environment:
+      MYSQL_DATABASE: lunchbot_db
+      MYSQL_ROOT_PASSWORD: anhtu2003
+    ports:
+      - "3307:3306"  
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Auto import khi lần đầu khởi động
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Service Backend
+  lunchbot_be:
+    build: .
+    container_name: spring_lunchbot
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      lunchbot_db:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://lunchbot_db:3306/lunchbot_db?useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=anhtu2003
+      - SPRING_MAIL_USERNAME=nguyenduc8197@gmail.com
+      - SPRING_MAIL_PASSWORD=emci gyfb odyr awfz
+
+volumes:
+  mysql_data:
