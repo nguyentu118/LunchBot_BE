@@ -55,7 +55,13 @@ public class SecurityConfig {
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
         return (web) -> web.ignoring()
-                .requestMatchers("/ws/**", "/ws", "/error");
+                .requestMatchers(
+                        "/ws/**",
+                        "/ws/info",
+                        "/ws/websocket",
+                        "/ws/**",
+                        "/error"
+                );
     }
 
     @Bean
