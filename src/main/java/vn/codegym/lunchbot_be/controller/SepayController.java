@@ -1,9 +1,6 @@
 package vn.codegym.lunchbot_be.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -17,14 +14,14 @@ import vn.codegym.lunchbot_be.model.enums.PaymentMethod;
 import vn.codegym.lunchbot_be.model.enums.PaymentStatus;
 import vn.codegym.lunchbot_be.repository.OrderRepository;
 import vn.codegym.lunchbot_be.service.OrderService;
-import vn.codegym.lunchbot_be.service.impl.MockSepayServiceImpl;
+import vn.codegym.lunchbot_be.service.impl.SepayServiceImpl;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * SePay Payment Controller - MOCK MODE ONLY
- * Xử lý thanh toán online qua SePay (giả lập)
+ * SePay Payment Controller - REAL INTEGRATION
+ * Xử lý thanh toán online qua SePay thật
  */
 @RestController
 @RequestMapping("/api/payment")
@@ -32,26 +29,22 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class SepayController {
 
-    private final MockSepayServiceImpl mockSepayService;
+    private final SepayServiceImpl sepayService;
     private final OrderService orderService;
     private final OrderRepository orderRepository;
 
-    @Value("${sepay.api.token:}")
+    @Value("${sepay.api.token}")
     private String sepayApiToken;
 
-    // ✅ Lưu orderInfo trong memory thay vì session
+    // Lưu orderInfo trong memory (có thể chuyển sang Redis trong production)
     private static final Map<String, OrderInfoDTO> pendingOrders = new ConcurrentHashMap<>();
 
     /**
-     * Tạo QR thanh toán SePay (MOCK)
+     * Tạo QR thanh toán SePay (REAL)
      */
     @PostMapping("/sepay/create")
-    public ResponseEntity<Map<String, Object>> createPayment(
-            @RequestBody OrderInfoDTO orderInfo,
-            HttpServletRequest request
-    ) {
+    public ResponseEntity<Map<String, Object>> createPayment(@RequestBody OrderInfoDTO orderInfo) {
         try {
-            log.info("📥 Received payment request: {}", orderInfo);
 
             // Validate input
             if (orderInfo.getItems() == null || orderInfo.getItems().isEmpty()) {
@@ -65,20 +58,20 @@ public class SepayController {
             // Tạo transaction reference
             String txnRef = "SPY" + System.currentTimeMillis();
 
-            // ✅ Lưu orderInfo vào ConcurrentHashMap (thread-safe)
+            // Lưu orderInfo vào memory
             pendingOrders.put(txnRef, orderInfo);
-
+            log.info("💾 Saved order info for txnRef: {}", txnRef);
 
             // Số tiền (VND)
             long amountInVND = orderInfo.getAmount().longValue();
 
-            // ✅ CHỈ DÙNG MOCK SERVICE
-            Map<String, Object> paymentQR = mockSepayService.createPaymentQR(amountInVND, txnRef);
+            // ✅ GỌI REAL SEPAY SERVICE
+            Map<String, Object> paymentQR = sepayService.createPaymentQR(amountInVND, txnRef);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("paymentMethod", "sepay");
-            response.put("mode", "MOCK");
+            response.put("mode", "REAL");
             response.put("txnRef", txnRef);
             response.put("qrCodeUrl", paymentQR.get("qrCodeUrl"));
             response.put("accountNumber", paymentQR.get("accountNumber"));
@@ -87,7 +80,7 @@ public class SepayController {
             response.put("amount", amountInVND);
             response.put("content", paymentQR.get("content"));
 
-            log.info("✅ SePay payment created for txnRef: {}", txnRef);
+            log.info("✅ [REAL] SePay payment created for txnRef: {}", txnRef);
 
             return ResponseEntity.ok(response);
 
@@ -101,23 +94,24 @@ public class SepayController {
     }
 
     /**
-     * Kiểm tra trạng thái thanh toán (MOCK)
+     * Kiểm tra trạng thái thanh toán (REAL)
+     * Frontend sẽ gọi API này để polling check payment
      */
     @PostMapping("/sepay/check")
-    public ResponseEntity<Map<String, Object>> checkPayment(
-            @RequestBody Map<String, Object> requestBody,
-            HttpServletRequest request
-    ) {
+    public ResponseEntity<Map<String, Object>> checkPayment(@RequestBody Map<String, Object> requestBody) {
         try {
             String txnRef = (String) requestBody.get("txnRef");
             Long amount = ((Number) requestBody.get("amount")).longValue();
 
+            log.info("🔍 [REAL] Checking payment for txnRef: {}", txnRef);
 
             // Kiểm tra đơn hàng đã tồn tại chưa
             Optional<Order> existingOrder = orderRepository.findByVnpayTransactionRef(txnRef);
 
             if (existingOrder.isPresent()) {
                 Order order = existingOrder.get();
+                log.info("✅ Order already exists: {}", order.getOrderNumber());
+
                 return ResponseEntity.ok(Map.of(
                         "success", true,
                         "paid", true,
@@ -127,15 +121,17 @@ public class SepayController {
                 ));
             }
 
-            // ✅ CHỈ DÙNG MOCK SERVICE
-            boolean isPaid = mockSepayService.checkTransaction(txnRef, amount);
-
+            // ✅ GỌI REAL SEPAY SERVICE ĐỂ CHECK TRANSACTION
+            boolean isPaid = sepayService.checkTransaction(txnRef, amount);
 
             if (isPaid) {
-                // ✅ Lấy orderInfo từ ConcurrentHashMap
+                log.info("💰 [REAL] Payment confirmed for txnRef: {}", txnRef);
+
+                // Lấy orderInfo từ memory
                 OrderInfoDTO orderInfo = pendingOrders.get(txnRef);
 
                 if (orderInfo == null) {
+                    log.error("❌ Order info not found for txnRef: {}", txnRef);
                     return ResponseEntity.ok(Map.of(
                             "success", false,
                             "paid", false,
@@ -143,16 +139,15 @@ public class SepayController {
                     ));
                 }
 
-
                 // Validate email
                 if (orderInfo.getUserEmail() == null || orderInfo.getUserEmail().isEmpty()) {
+                    log.error("❌ Invalid order info - missing email");
                     return ResponseEntity.ok(Map.of(
                             "success", false,
                             "paid", false,
                             "message", "Thông tin đơn hàng không hợp lệ"
                     ));
                 }
-
 
                 // Tạo đơn hàng
                 CheckoutRequest checkoutRequest = new CheckoutRequest();
@@ -176,16 +171,12 @@ public class SepayController {
                 order.setPaymentStatus(PaymentStatus.PAID);
                 orderRepository.save(order);
 
-                // ✅ Xóa orderInfo khỏi memory
+                // Xóa orderInfo khỏi memory
                 pendingOrders.remove(txnRef);
-
-                // Cleanup mock transaction
-                mockSepayService.clearMockTransaction(txnRef);
-
+                log.info("🗑️ Removed order info from memory for txnRef: {}", txnRef);
 
                 // Lấy thông tin giao dịch chi tiết
-                Map<String, Object> transactionDetail =
-                        mockSepayService.getTransactionDetail(txnRef, amount);
+                Map<String, Object> transactionDetail = sepayService.getTransactionDetail(txnRef, amount);
 
                 Map<String, Object> response = new HashMap<>();
                 response.put("success", true);
@@ -193,14 +184,17 @@ public class SepayController {
                 response.put("orderId", order.getId());
                 response.put("orderNumber", order.getOrderNumber());
                 response.put("message", "Thanh toán thành công");
-                response.put("mode", "MOCK");
+                response.put("mode", "REAL");
+
                 if (transactionDetail != null) {
                     response.put("transactionDetail", transactionDetail);
                 }
 
+                log.info("✅ [REAL] Order created successfully: {}", order.getOrderNumber());
                 return ResponseEntity.ok(response);
 
             } else {
+                log.info("⏳ [REAL] Payment not confirmed yet for txnRef: {}", txnRef);
                 return ResponseEntity.ok(Map.of(
                         "success", true,
                         "paid", false,
@@ -209,6 +203,7 @@ public class SepayController {
             }
 
         } catch (Exception e) {
+            log.error("❌ Error checking payment: ", e);
             return ResponseEntity.ok(Map.of(
                     "success", false,
                     "paid", false,
@@ -218,37 +213,68 @@ public class SepayController {
     }
 
     /**
-     * 🎮 Manual trigger payment (Dùng để demo nhanh)
+     * Webhook từ SePay (REAL)
+     * SePay sẽ gọi API này khi có giao dịch mới
      */
-    @PostMapping("/sepay/mock/trigger/{txnRef}")
-    public ResponseEntity<Map<String, Object>> mockTriggerPayment(@PathVariable String txnRef) {
-        boolean triggered = mockSepayService.manualTriggerPayment(txnRef);
+    @PostMapping("/sepay-webhook")
+    public ResponseEntity<?> handleSepayWebhook(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestBody SepayWebhookDTO webhookData
+    ) {
+        try {
+            log.info("🔔 [WEBHOOK] Received SePay Webhook");
+            log.info("🔑 Authorization header: {}", authorization);
 
-        return ResponseEntity.ok(Map.of(
-                "success", triggered,
-                "message", triggered ? "Payment triggered" : "Transaction not found"
-        ));
+            // 1. Bảo mật: Kiểm tra Token
+            if (sepayApiToken != null && !sepayApiToken.isEmpty()) {
+                if (authorization == null || !authorization.startsWith("Bearer " + sepayApiToken)) {
+                    log.error("❌ Invalid SePay API Token!");
+                    return ResponseEntity.status(403).body("Unauthorized");
+                }
+            }
+
+
+            // 2. Xử lý logic thanh toán
+            orderService.processSepayPayment(webhookData);
+
+
+            // 3. Phản hồi cho SePay biết đã nhận tin (Bắt buộc trả về 200 OK)
+            return ResponseEntity.ok(Map.of("success", true));
+
+        } catch (Exception e) {
+            // Vẫn trả về 200 để SePay không gửi lại (retry) gây spam
+            return ResponseEntity.ok(Map.of("success", false, "error", e.getMessage()));
+        }
     }
 
     /**
-     * Test endpoint
+     * Test endpoint - Kiểm tra kết nối với SePay API
      */
     @GetMapping("/sepay/test")
     public ResponseEntity<Map<String, Object>> testSepay() {
         try {
-            String txnRef = "TEST" + System.currentTimeMillis();
-            long amount = 50000;
 
-            Map<String, Object> qrInfo = mockSepayService.createPaymentQR(amount, txnRef);
+            boolean connected = sepayService.testConnection();
 
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "mode", "MOCK",
-                    "message", "SePay test successful",
-                    "data", qrInfo
-            ));
+            if (connected) {
+                // Lấy vài giao dịch gần đây để test
+                List<Map<String, Object>> recentTrans = sepayService.getRecentTransactions(5);
+
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "mode", "REAL",
+                        "message", "SePay connection successful",
+                        "recentTransactions", recentTrans
+                ));
+            } else {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "Cannot connect to SePay API"
+                ));
+            }
 
         } catch (Exception e) {
+            log.error("❌ Test failed: ", e);
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
                     "message", "Test failed: " + e.getMessage()
@@ -257,56 +283,28 @@ public class SepayController {
     }
 
     /**
-     * 📊 Debug: Xem tất cả mock transactions
-     */
-    @GetMapping("/sepay/mock/transactions")
-    public ResponseEntity<Map<String, Object>> getAllMockTransactions() {
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "transactions", mockSepayService.getAllMockTransactions(),
-                "pendingOrders", pendingOrders.size()
-        ));
-    }
-
-    /**
      * 📊 Debug: Xem tất cả pending orders
      */
-    @GetMapping("/sepay/mock/pending-orders")
+    @GetMapping("/sepay/pending-orders")
     public ResponseEntity<Map<String, Object>> getAllPendingOrders() {
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
+        result.put("mode", "REAL");
         result.put("count", pendingOrders.size());
         result.put("txnRefs", pendingOrders.keySet());
         return ResponseEntity.ok(result);
     }
 
-    @PostMapping("/sepay-webhook")
-    public ResponseEntity<?> handleSepayWebhook(
-            @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestBody SepayWebhookDTO webhookData
-    ) {
-        try {
-            log.info("Nhận Webhook SePay: {}", webhookData);
+    /**
+     * 🗑️ Clear pending order (Admin only)
+     */
+    @DeleteMapping("/sepay/pending-orders/{txnRef}")
+    public ResponseEntity<Map<String, Object>> clearPendingOrder(@PathVariable String txnRef) {
+        OrderInfoDTO removed = pendingOrders.remove(txnRef);
 
-            // 1. Bảo mật: Kiểm tra Token (Optional nhưng nên có)
-            // Cấu trúc header SePay gửi: "Bearer <token>"
-            if (sepayApiToken != null && !sepayApiToken.isEmpty()) {
-                if (authorization == null || !authorization.startsWith("Bearer " + sepayApiToken)) {
-                    log.error("Sai SePay API Token!");
-                    return ResponseEntity.status(403).body("Unauthorized");
-                }
-            }
-
-            // 2. Xử lý logic
-            orderService.processSepayPayment(webhookData);
-
-            // 3. Phản hồi cho SePay biết đã nhận tin (Bắt buộc trả về 200 OK)
-            return ResponseEntity.ok(Map.of("success", true));
-
-        } catch (Exception e) {
-            log.error("Lỗi xử lý webhook: ", e);
-            // Vẫn trả về 200 để SePay không gọi lại (retry) gây spam, nhưng ghi log để Admin check
-            return ResponseEntity.ok(Map.of("success", false, "error", e.getMessage()));
-        }
+        return ResponseEntity.ok(Map.of(
+                "success", removed != null,
+                "message", removed != null ? "Cleared" : "Not found"
+        ));
     }
 }
