@@ -1,4 +1,5 @@
 package vn.codegym.lunchbot_be.service.impl;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import vn.codegym.lunchbot_be.model.enums.PaymentStatus;
 import vn.codegym.lunchbot_be.model.enums.RefundStatus;
 import vn.codegym.lunchbot_be.repository.OrderRepository;
 import vn.codegym.lunchbot_be.repository.RefundRequestRepository;
+import vn.codegym.lunchbot_be.service.RefundNotificationService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
 public class RefundServiceImpl {
     private final RefundRequestRepository refundRequestRepository;
     private final OrderRepository orderRepository;
+    private final RefundNotificationService refundNotificationService; // ✅ THÊM SERVICE THÔNG BÁO
 
     /**
      * Tạo yêu cầu hoàn tiền khi đơn hàng bị hủy
@@ -90,6 +93,15 @@ public class RefundServiceImpl {
 
             log.info("✅ Refund request created successfully: ID={}", refundRequest.getId());
 
+            // ✅ GỬI THÔNG BÁO CHO ADMIN
+            try {
+                refundNotificationService.notifyAdminNewRefundRequest(refundRequest);
+                log.info("📧 Sent refund notification to admins");
+            } catch (Exception e) {
+                log.error("❌ Failed to send refund notification: {}", e.getMessage());
+                // Không throw exception để không ảnh hưởng đến việc tạo refund request
+            }
+
             return refundRequest;
 
         } catch (Exception e) {
@@ -108,6 +120,7 @@ public class RefundServiceImpl {
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
+
     @Transactional
     public RefundResponse markAsProcessing(Long refundId, String adminEmail, String notes) {
         log.info("🔄 Marking refund {} as PROCESSING", refundId);
@@ -119,6 +132,8 @@ public class RefundServiceImpl {
             throw new IllegalStateException("Chỉ có thể chuyển sang PROCESSING từ trạng thái PENDING");
         }
 
+        RefundStatus oldStatus = refund.getRefundStatus();
+
         refund.setRefundStatus(RefundStatus.PROCESSING);
         refund.setProcessedBy(adminEmail);
         if (notes != null && !notes.trim().isEmpty()) {
@@ -127,6 +142,13 @@ public class RefundServiceImpl {
 
         refundRequestRepository.save(refund);
         log.info("✅ Refund marked as PROCESSING");
+
+        // ✅ GỬI THÔNG BÁO CHO USER
+        try {
+            refundNotificationService.notifyRefundStatusChanged(refund, oldStatus, RefundStatus.PROCESSING);
+        } catch (Exception e) {
+            log.error("❌ Failed to send notification: {}", e.getMessage());
+        }
 
         return convertToResponse(refund);
     }
@@ -161,6 +183,8 @@ public class RefundServiceImpl {
             RefundRequest refund = refundRequestRepository.findById(refundId)
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu hoàn tiền"));
 
+            RefundStatus oldStatus = refund.getRefundStatus();
+
             // Cập nhật trạng thái
             refund.setRefundStatus(RefundStatus.COMPLETED);
             refund.setProcessedAt(LocalDateTime.now());
@@ -177,6 +201,14 @@ public class RefundServiceImpl {
 
             log.info("✅ Refund completed successfully for order: {}", order.getOrderNumber());
 
+            // ✅ GỬI THÔNG BÁO CHO USER
+            try {
+                refundNotificationService.notifyRefundStatusChanged(refund, oldStatus, RefundStatus.COMPLETED);
+                log.info("📧 Sent refund completion notification");
+            } catch (Exception e) {
+                log.error("❌ Failed to send notification: {}", e.getMessage());
+            }
+
         } catch (Exception e) {
             log.error("❌ Error confirming refund: ", e);
             throw new RuntimeException("Không thể xác nhận hoàn tiền: " + e.getMessage());
@@ -192,6 +224,8 @@ public class RefundServiceImpl {
             RefundRequest refund = refundRequestRepository.findById(refundId)
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu hoàn tiền"));
 
+            RefundStatus oldStatus = refund.getRefundStatus();
+
             refund.setRefundStatus(RefundStatus.FAILED);
             refund.setProcessedAt(LocalDateTime.now());
             refund.setProcessedBy(adminEmail);
@@ -200,6 +234,14 @@ public class RefundServiceImpl {
             refundRequestRepository.save(refund);
 
             log.warn("⚠️ Refund marked as failed: {}", reason);
+
+            // ✅ GỬI THÔNG BÁO CHO USER
+            try {
+                refundNotificationService.notifyRefundStatusChanged(refund, oldStatus, RefundStatus.FAILED);
+                log.info("📧 Sent refund failure notification");
+            } catch (Exception e) {
+                log.error("❌ Failed to send notification: {}", e.getMessage());
+            }
 
         } catch (Exception e) {
             log.error("❌ Error marking refund as failed: ", e);
@@ -216,6 +258,8 @@ public class RefundServiceImpl {
             RefundRequest refund = refundRequestRepository.findById(refundId)
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu hoàn tiền"));
 
+            RefundStatus oldStatus = refund.getRefundStatus();
+
             refund.setRefundStatus(RefundStatus.CANCELLED);
             refund.setProcessedAt(LocalDateTime.now());
             refund.setProcessedBy(adminEmail);
@@ -229,6 +273,14 @@ public class RefundServiceImpl {
             orderRepository.save(order);
 
             log.info("🚫 Refund cancelled: {}", reason);
+
+            // ✅ GỬI THÔNG BÁO CHO USER
+            try {
+                refundNotificationService.notifyRefundStatusChanged(refund, oldStatus, RefundStatus.CANCELLED);
+                log.info("📧 Sent refund cancellation notification");
+            } catch (Exception e) {
+                log.error("❌ Failed to send notification: {}", e.getMessage());
+            }
 
         } catch (Exception e) {
             log.error("❌ Error cancelling refund: ", e);
@@ -247,6 +299,8 @@ public class RefundServiceImpl {
             throw new IllegalStateException("Chỉ có thể retry refund từ trạng thái FAILED");
         }
 
+        RefundStatus oldStatus = refund.getRefundStatus();
+
         // Reset về PENDING
         refund.setRefundStatus(RefundStatus.PENDING);
         refund.setProcessedBy(adminEmail);
@@ -257,8 +311,17 @@ public class RefundServiceImpl {
 
         log.info("✅ Refund reset to PENDING for retry");
 
+        // ✅ GỬI THÔNG BÁO CHO ADMIN (yêu cầu mới cần xử lý lại)
+        try {
+            refundNotificationService.notifyAdminNewRefundRequest(refund);
+            log.info("📧 Sent retry notification to admins");
+        } catch (Exception e) {
+            log.error("❌ Failed to send notification: {}", e.getMessage());
+        }
+
         return convertToResponse(refund);
     }
+
     /**
      * ✅ THÊM: Lấy refunds theo status
      */
@@ -270,7 +333,6 @@ public class RefundServiceImpl {
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
-
 
     /**
      * Convert Entity sang DTO Response
