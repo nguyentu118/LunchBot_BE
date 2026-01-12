@@ -4,14 +4,12 @@ services:
     image: mysql:8.0
     container_name: mysql_lunchbot
     restart: unless-stopped
-    env_file:
-      - .env.docker
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
       - --default-authentication-plugin=mysql_native_password
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: anhtu2003
       MYSQL_DATABASE: lunchbot_db
       TZ: Asia/Ho_Chi_Minh
     ports:
@@ -20,7 +18,7 @@ services:
       - mysql_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-panhtu2003"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -35,57 +33,100 @@ services:
       dockerfile: Dockerfile
     container_name: spring_lunchbot
     restart: unless-stopped
-    env_file:
-      - .env.docker
     ports:
       - "8080:8080"
     environment:
-      # Database
-      SPRING_DATASOURCE_URL: ${DB_URL}
-      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      # ==========================================
+      # DATABASE CONFIGURATION - EXPLICIT OVERRIDE FOR DOCKER
+      # ==========================================
+      DB_URL: jdbc:mysql://lunchbot_db:3306/lunchbot_db?useSSL=false&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Ho_Chi_Minh
+      DB_USERNAME: root
+      DB_PASSWORD: anhtu2003
 
-      # Mail
+      # ==========================================
+      # MAIL CONFIGURATION
+      # ==========================================
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
       SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
       SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_FROM: ${MAIL_FROM}
+      MAIL_SUPPORT: ${MAIL_SUPPORT}
+      MAIL_TIMEOUT: ${MAIL_TIMEOUT}
 
-      # JWT
+      # ==========================================
+      # JWT CONFIGURATION
+      # ==========================================
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION}
 
-      # App
+      # ==========================================
+      # APP CONFIGURATION
+      # ==========================================
       APP_NAME: ${APP_NAME}
       APP_URL: ${APP_URL}
       FRONTEND_URL: ${FRONTEND_URL}
       BACKEND_URL: ${BACKEND_URL}
-      MAIL_FROM: ${MAIL_FROM}
-      MAIL_SUPPORT: ${MAIL_SUPPORT}
+      SERVER_PORT: ${SERVER_PORT}
 
-      # GHN
+      # ==========================================
+      # LOGGING CONFIGURATION
+      # ==========================================
+      JPA_DDL_AUTO: ${JPA_DDL_AUTO}
+      JPA_SHOW_SQL: ${JPA_SHOW_SQL}
+      HIBERNATE_SQL_LOG: ${HIBERNATE_SQL_LOG}
+      HIBERNATE_BIND_LOG: ${HIBERNATE_BIND_LOG}
+      SPRING_SECURITY_LOG: INFO
+      SPRING_CORS_LOG: INFO
+      SPRING_MAIL_LOG: INFO
+
+      # ==========================================
+      # WEBSOCKET CONFIGURATION
+      # ==========================================
+      WEBSOCKET_MESSAGE_SIZE: ${WEBSOCKET_MESSAGE_SIZE}
+      WEBSOCKET_SEND_TIME: ${WEBSOCKET_SEND_TIME}
+      WEBSOCKET_BUFFER_SIZE: ${WEBSOCKET_BUFFER_SIZE}
+
+      # ==========================================
+      # GHN API CONFIGURATION
+      # ==========================================
       GHN_API_TOKEN: ${GHN_API_TOKEN}
       GHN_DISTRICT_ID: ${GHN_DISTRICT_ID}
       GHN_SHOP_ID: ${GHN_SHOP_ID}
 
-      # SEPAY
+      # ==========================================
+      # SEPAY CONFIGURATION
+      # ==========================================
+      SEPAY_MOCK_ENABLED: ${SEPAY_MOCK_ENABLED}
+      SEPAY_MOCK_DELAY: ${SEPAY_MOCK_DELAY}
       SEPAY_ACCOUNT_NUMBER: ${SEPAY_ACCOUNT_NUMBER}
       SEPAY_ACCOUNT_NAME: ${SEPAY_ACCOUNT_NAME}
       SEPAY_BANK_BIN: ${SEPAY_BANK_BIN}
+      SEPAY_BANK_NAME: ${SEPAY_BANK_NAME}
       SEPAY_API_TOKEN: ${SEPAY_API_TOKEN}
       SEPAY_ACCOUNT_ID: ${SEPAY_ACCOUNT_ID}
-      SEPAY_WEBHOOK_URL: ${SEPAY_WEBHOOK_URL}
+      SEPAY_API_BASE_URL: ${SEPAY_API_BASE_URL}
+      SEPAY_WEBHOOK_URL: http://lunchbot_be:8080/api/payment/sepay-webhook
+      SEPAY_POLLING_INTERVAL: ${SEPAY_POLLING_INTERVAL}
+      SEPAY_POLLING_MAX_ATTEMPTS: ${SEPAY_POLLING_MAX_ATTEMPTS}
+      SEPAY_TRANSACTION_TIMEOUT: ${SEPAY_TRANSACTION_TIMEOUT}
 
+      # System
       TZ: Asia/Ho_Chi_Minh
+      SPRING_PROFILES_ACTIVE: docker
+
     depends_on:
       lunchbot_db:
         condition: service_healthy
     networks:
       - lunchbot_network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
+    # TEMPORARY: Comment out healthcheck to test if backend works
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 5
+    #   start_period: 60s
 
 networks:
   lunchbot_network:

@@ -2,10 +2,8 @@ package vn.codegym.lunchbot_be.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import vn.codegym.lunchbot_be.dto.response.DishResponse;
-import vn.codegym.lunchbot_be.dto.response.MerchantProfileResponse;
-import vn.codegym.lunchbot_be.dto.response.MerchantResponseDTO;
-import vn.codegym.lunchbot_be.dto.response.PopularMerchantDto;
+import vn.codegym.lunchbot_be.dto.request.BankAccountRequest;
+import vn.codegym.lunchbot_be.dto.response.*;
 import vn.codegym.lunchbot_be.model.Coupon;
 import vn.codegym.lunchbot_be.model.Merchant;
 
@@ -39,4 +37,7 @@ public interface MerchantService {
 
     Page<MerchantResponseDTO> getAllMerchantsWithPagination(Pageable pageable, String status);
 
+    BankAccountResponse updateBankAccount(Long userId, BankAccountRequest request);
+
+    BankAccountResponse getBankAccount(Long userId);
 }

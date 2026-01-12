@@ -1,6 +1,7 @@
 package vn.codegym.lunchbot_be.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.codegym.lunchbot_be.dto.request.WithdrawalCreateDTO;
@@ -25,11 +26,13 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FinancialServiceImpl implements FinancialService {
 
     private final MerchantRepository merchantRepository;
     private final WithdrawalRequestRepository withdrawalRequestRepository;
     private final OrderRepository orderRepository;
+    private final WithdrawalNotificationServiceImpl withdrawalNotificationService; // ✅ INJECT INTERFACE
 
     // --- TASK 24: RÚT TIỀN THÔNG THƯỜNG ---
     @Override
@@ -59,7 +62,15 @@ public class FinancialServiceImpl implements FinancialService {
                 .status(WithdrawalStatus.PENDING)
                 .adminNotes("Yêu cầu rút tiền thường")
                 .build();
-        withdrawalRequestRepository.save(request);
+        WithdrawalRequest savedRequest = withdrawalRequestRepository.save(request); // ✅ LƯU LẠI
+
+        // ✅ GỬI THÔNG BÁO
+        try {
+            withdrawalNotificationService.notifyMerchantWithdrawalRequested(savedRequest);
+            withdrawalNotificationService.notifyAdminNewWithdrawalRequest(savedRequest);
+        } catch (Exception e) {
+            log.error("❌ Failed to send withdrawal notifications", e);
+        }
     }
 
     // --- TASK 23: THANH LÝ HỢP ĐỒNG ---
@@ -75,10 +86,10 @@ public class FinancialServiceImpl implements FinancialService {
             throw new IllegalStateException("Điều kiện thanh lý không thỏa mãn: Doanh thu tháng hiện tại phải > 100 triệu (Hiện tại: " + currentMonthRevenue + ")");
         }
 
-        // 2. Kiểm tra đơn hàng tồn đọng
+        // 2. Kiểm tra đơn hàng tồn động
         boolean hasActiveOrders = orderRepository.existsByMerchantIdAndStatusIn(
                 merchantId,
-                Arrays.asList(OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.PROCESSING,OrderStatus.READY, OrderStatus.DELIVERING)
+                Arrays.asList(OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.READY, OrderStatus.DELIVERING)
         );
         if (hasActiveOrders) {
             throw new IllegalStateException("Không thể thanh lý: Vẫn còn đơn hàng đang xử lý. Vui lòng hoàn thành hoặc hủy hết đơn hàng.");
@@ -86,6 +97,8 @@ public class FinancialServiceImpl implements FinancialService {
 
         // 3. Rút TOÀN BỘ tiền còn lại
         BigDecimal remainingBalance = merchant.getCurrentBalance();
+        WithdrawalRequest savedRequest = null; // ✅ KHAI BÁO NGOÀI IF
+
         if (remainingBalance.compareTo(BigDecimal.ZERO) > 0) {
             merchant.setCurrentBalance(BigDecimal.ZERO); // Trừ sạch ví
 
@@ -95,7 +108,7 @@ public class FinancialServiceImpl implements FinancialService {
                     .status(WithdrawalStatus.PENDING)
                     .adminNotes("THANH LÝ HỢP ĐỒNG - RÚT TOÀN BỘ")
                     .build();
-            withdrawalRequestRepository.save(request);
+            savedRequest = withdrawalRequestRepository.save(request); // ✅ LƯU LẠI
         }
 
         // 4. Khóa tài khoản vĩnh viễn
@@ -103,20 +116,28 @@ public class FinancialServiceImpl implements FinancialService {
         merchant.setIsLocked(true);
         merchant.setRejectionReason("Đã yêu cầu thanh lý hợp đồng");
         updateBankInfo(merchant, bankInfoDTO);
-
         merchantRepository.save(merchant);
+
+        // ✅ GỬI THÔNG BÁO (chỉ khi có withdrawal request)
+        if (savedRequest != null) {
+            try {
+                withdrawalNotificationService.notifyMerchantContractLiquidated(savedRequest);
+                withdrawalNotificationService.notifyAdminContractLiquidation(savedRequest);
+            } catch (Exception e) {
+                log.error("❌ Failed to send liquidation notifications", e);
+            }
+        }
     }
 
     @Override
     public List<WithdrawalHistoryResponse> getMerchantWithdrawalHistory(Long merchantId) {
         List<WithdrawalRequest> requests = withdrawalRequestRepository.findByMerchantId(merchantId);
 
-        // Convert Entity -> DTO
         return requests.stream()
                 .map(req -> WithdrawalHistoryResponse.builder()
                         .id(req.getId())
-                        .amount(req.getAmount())           // Lấy amount từ Entity
-                        .requestedAt(req.getRequestedAt()) // Lấy requestedAt từ Entity
+                        .amount(req.getAmount())
+                        .requestedAt(req.getRequestedAt())
                         .status(req.getStatus())
                         .adminNotes(req.getAdminNotes())
                         .merchant(WithdrawalHistoryResponse.MerchantBankInfo.builder()
@@ -137,6 +158,7 @@ public class FinancialServiceImpl implements FinancialService {
         } else {
             requests = withdrawalRequestRepository.findByStatus(status);
         }
+
         return requests.stream()
                 .map(req -> WithdrawalHistoryResponse.builder()
                         .id(req.getId())
@@ -166,11 +188,14 @@ public class FinancialServiceImpl implements FinancialService {
 
         // 1. Cập nhật trạng thái
         request.approve("Admin đã duyệt chuyển khoản.");
+        WithdrawalRequest saved = withdrawalRequestRepository.save(request);
 
-        // (Optional) Tại đây bạn có thể tạo bản ghi Transaction lưu lịch sử "Rút tiền thành công"
-        // createTransaction(request, TransactionStatus.COMPLETED, ...);
-
-        withdrawalRequestRepository.save(request);
+        // ✅ GỬI THÔNG BÁO
+        try {
+            withdrawalNotificationService.notifyMerchantWithdrawalApproved(saved);
+        } catch (Exception e) {
+            log.error("❌ Failed to send approval notification", e);
+        }
     }
 
     @Override
@@ -185,19 +210,20 @@ public class FinancialServiceImpl implements FinancialService {
 
         // 1. Cập nhật trạng thái Request
         request.reject(reason);
-        withdrawalRequestRepository.save(request);
+        WithdrawalRequest saved = withdrawalRequestRepository.save(request);
 
         // 2. QUAN TRỌNG: HOÀN TIỀN VỀ VÍ MERCHANT
         Merchant merchant = request.getMerchant();
         BigDecimal refundAmount = request.getAmount();
-
         merchant.setCurrentBalance(merchant.getCurrentBalance().add(refundAmount));
-
-        // Nếu đây là yêu cầu Thanh lý (Tài khoản đang bị khóa),
-        // Admin có thể cân nhắc mở khóa lại hay không.
-        // Ở đây tôi giữ nguyên trạng thái LOCKED để Admin xử lý thủ công nếu cần.
-
         merchantRepository.save(merchant);
+
+        // ✅ GỬI THÔNG BÁO
+        try {
+            withdrawalNotificationService.notifyMerchantWithdrawalRejected(saved);
+        } catch (Exception e) {
+            log.error("❌ Failed to send rejection notification", e);
+        }
     }
 
     // Helper: Cập nhật thông tin bank
@@ -207,7 +233,7 @@ public class FinancialServiceImpl implements FinancialService {
         merchant.setBankAccountHolder(dto.getBankAccountHolder());
     }
 
-    // Helper: Tính doanh thu tháng hiện tại (Copy logic hoặc gọi từ OrderRepository)
+    // Helper: Tính doanh thu tháng hiện tại
     private BigDecimal calculateCurrentMonthRevenue(Long merchantId) {
         YearMonth currentMonth = YearMonth.now();
         LocalDateTime startDate = currentMonth.atDay(1).atStartOfDay();

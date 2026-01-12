@@ -4,6 +4,8 @@ services:
     image: mysql:8.0
     container_name: mysql_lunchbot_prod
     restart: always
+    env_file:
+      - .env.production
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
@@ -16,9 +18,10 @@ services:
       MYSQL_COLLATION: utf8mb4_unicode_ci
       TZ: Asia/Ho_Chi_Minh
     ports:
-      - "3307:3306"
+      - "3306:3306"  # Production use standard port
     volumes:
       - mysql_data_prod:/var/lib/mysql
+      - ./backups:/backups
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
       timeout: 20s
@@ -34,10 +37,100 @@ services:
       dockerfile: Dockerfile
     container_name: spring_lunchbot_prod
     restart: always
+    env_file:
+      - .env.production
     ports:
       - "8080:8080"
-    env_file:
-      - .env
+    environment:
+      # ==========================================
+      # DATABASE CONFIGURATION
+      # ==========================================
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      # ==========================================
+      # MAIL CONFIGURATION
+      # ==========================================
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_FROM: ${MAIL_FROM}
+      MAIL_SUPPORT: ${MAIL_SUPPORT}
+      MAIL_TIMEOUT: ${MAIL_TIMEOUT}
+
+      # ==========================================
+      # JWT CONFIGURATION
+      # ==========================================
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+
+      # ==========================================
+      # APP CONFIGURATION
+      # ==========================================
+      APP_NAME: ${APP_NAME}
+      APP_URL: ${APP_URL}
+      FRONTEND_URL: ${FRONTEND_URL}
+      BACKEND_URL: ${BACKEND_URL}
+      SERVER_PORT: ${SERVER_PORT}
+
+      # ==========================================
+      # LOGGING CONFIGURATION (Production - Less verbose)
+      # ==========================================
+      JPA_DDL_AUTO: ${JPA_DDL_AUTO}
+      JPA_SHOW_SQL: ${JPA_SHOW_SQL}
+      HIBERNATE_SQL_LOG: ${HIBERNATE_SQL_LOG}
+      HIBERNATE_BIND_LOG: ${HIBERNATE_BIND_LOG}
+      SPRING_SECURITY_LOG: ${SPRING_SECURITY_LOG}
+      SPRING_CORS_LOG: ${SPRING_CORS_LOG}
+      SPRING_MAIL_LOG: ${SPRING_MAIL_LOG}
+
+      # ==========================================
+      # WEBSOCKET CONFIGURATION
+      # ==========================================
+      WEBSOCKET_MESSAGE_SIZE: ${WEBSOCKET_MESSAGE_SIZE}
+      WEBSOCKET_SEND_TIME: ${WEBSOCKET_SEND_TIME}
+      WEBSOCKET_BUFFER_SIZE: ${WEBSOCKET_BUFFER_SIZE}
+
+      # ==========================================
+      # GHN API CONFIGURATION
+      # ==========================================
+      GHN_API_TOKEN: ${GHN_API_TOKEN}
+      GHN_DISTRICT_ID: ${GHN_DISTRICT_ID}
+      GHN_SHOP_ID: ${GHN_SHOP_ID}
+
+      # ==========================================
+      # SEPAY CONFIGURATION (PRODUCTION - REAL PAYMENTS)
+      # ==========================================
+      SEPAY_MOCK_ENABLED: ${SEPAY_MOCK_ENABLED}
+      SEPAY_MOCK_DELAY: ${SEPAY_MOCK_DELAY}
+
+      # Account Information
+      SEPAY_ACCOUNT_NUMBER: ${SEPAY_ACCOUNT_NUMBER}
+      SEPAY_ACCOUNT_NAME: ${SEPAY_ACCOUNT_NAME}
+      SEPAY_BANK_BIN: ${SEPAY_BANK_BIN}
+      SEPAY_BANK_NAME: ${SEPAY_BANK_NAME}
+
+      # API Configuration
+      SEPAY_API_TOKEN: ${SEPAY_API_TOKEN}
+      SEPAY_ACCOUNT_ID: ${SEPAY_ACCOUNT_ID}
+      SEPAY_API_BASE_URL: ${SEPAY_API_BASE_URL}
+
+      # Webhook Configuration (Must be HTTPS)
+      SEPAY_WEBHOOK_URL: ${SEPAY_WEBHOOK_URL}
+
+      # Polling Configuration
+      SEPAY_POLLING_INTERVAL: ${SEPAY_POLLING_INTERVAL}
+      SEPAY_POLLING_MAX_ATTEMPTS: ${SEPAY_POLLING_MAX_ATTEMPTS}
+
+      # Transaction Configuration
+      SEPAY_TRANSACTION_TIMEOUT: ${SEPAY_TRANSACTION_TIMEOUT}
+
+      # System
+      TZ: Asia/Ho_Chi_Minh
+      SPRING_PROFILES_ACTIVE: prod
+
     depends_on:
       lunchbot_db:
         condition: service_healthy
@@ -49,6 +142,15 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
 
 networks:
   lunchbot_network:
