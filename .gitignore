@@ -32,5 +32,4 @@ mvnw.cmd
 # Exclude extra files
 *.zip
 *.ps1
-
-/claims
+claims/
