@@ -12,9 +12,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import vn.codegym.lunchbot_be.dto.request.BankAccountRequest;
 import vn.codegym.lunchbot_be.dto.request.CouponCreateRequest;
 import vn.codegym.lunchbot_be.dto.request.MerchantUpdateRequest;
 import vn.codegym.lunchbot_be.dto.response.*;
+import vn.codegym.lunchbot_be.exception.InvalidOperationException;
+import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
 import vn.codegym.lunchbot_be.model.Coupon;
 import vn.codegym.lunchbot_be.model.Merchant;
 import vn.codegym.lunchbot_be.model.enums.OrderStatus;
@@ -404,5 +407,53 @@ public class MerchantController {
         }
     }
 
+    @PutMapping("/bank-account")
+    @PreAuthorize("hasRole('MERCHANT')")
+    public ResponseEntity<?> updateBankAccount(
+            @Valid @RequestBody BankAccountRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        try {
+            Long userId = userDetails.getId();
+
+            BankAccountResponse response = merchantService.updateBankAccount(userId, request);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Cập nhật tài khoản ngân hàng thành công",
+                    "data", response
+            ));
+        } catch (InvalidOperationException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Lỗi hệ thống: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * GET /api/merchants/bank-account
+     * Lấy thông tin tài khoản ngân hàng
+     */
+    @GetMapping("/bank-account")
+    @PreAuthorize("hasRole('MERCHANT')")
+    public ResponseEntity<?> getBankAccount(
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        try {
+            Long userId = userDetails.getId();
+
+            BankAccountResponse response = merchantService.getBankAccount(userId);
+
+            return ResponseEntity.ok(response);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Lỗi hệ thống: " + e.getMessage()));
+        }
+    }
 
 }

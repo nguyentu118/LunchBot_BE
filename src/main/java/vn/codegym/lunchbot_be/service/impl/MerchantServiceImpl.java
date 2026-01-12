@@ -6,11 +6,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import vn.codegym.lunchbot_be.dto.request.BankAccountRequest;
 import vn.codegym.lunchbot_be.dto.request.MerchantUpdateRequest;
-import vn.codegym.lunchbot_be.dto.response.DishResponse;
-import vn.codegym.lunchbot_be.dto.response.MerchantProfileResponse;
-import vn.codegym.lunchbot_be.dto.response.MerchantResponseDTO;
-import vn.codegym.lunchbot_be.dto.response.PopularMerchantDto;
+import vn.codegym.lunchbot_be.dto.response.*;
 import vn.codegym.lunchbot_be.exception.InvalidOperationException;
 import vn.codegym.lunchbot_be.exception.ResourceNotFoundException;
 import vn.codegym.lunchbot_be.model.Dish;
@@ -461,5 +459,72 @@ public class MerchantServiceImpl implements MerchantService {
                 .openTime(merchant.getOpenTime() != null ? merchant.getOpenTime().toString() : null)
                 .closeTime(merchant.getCloseTime() != null ? merchant.getCloseTime().toString() : null)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public BankAccountResponse updateBankAccount(Long userId, BankAccountRequest request) {
+        // 1. Tìm merchant
+        Merchant merchant = merchantRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin nhà hàng"));
+
+        // 2. Validate: Không cho phép thay đổi nếu đang có yêu cầu rút tiền pending
+        if (hasWithdrawalRequests(merchant.getId())) {
+            throw new InvalidOperationException(
+                    "Không thể cập nhật tài khoản ngân hàng khi đang có yêu cầu rút tiền chờ xử lý"
+            );
+        }
+
+        // 3. Cập nhật thông tin
+        merchant.setBankName(request.getBankName());
+        merchant.setBankAccountNumber(request.getBankAccountNumber());
+        merchant.setBankAccountHolder(request.getBankAccountHolder().toUpperCase());
+
+        merchantRepository.save(merchant);
+
+        // 4. Trả về response
+        return BankAccountResponse.builder()
+                .merchantId(merchant.getId())
+                .restaurantName(merchant.getRestaurantName())
+                .bankName(merchant.getBankName())
+                .bankAccountNumber(merchant.getBankAccountNumber())
+                .bankAccountHolder(merchant.getBankAccountHolder())
+                .hasLinkedBank(true)
+                .build();
+    }
+
+    @Override
+    public BankAccountResponse getBankAccount(Long userId) {
+        // 1. Tìm merchant
+        Merchant merchant = merchantRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin nhà hàng"));
+
+        // 2. Kiểm tra đã có tài khoản ngân hàng chưa
+        boolean hasLinkedBank = merchant.getBankAccountNumber() != null
+                && !merchant.getBankAccountNumber().isEmpty();
+
+        // 3. Trả về response
+        return BankAccountResponse.builder()
+                .merchantId(merchant.getId())
+                .restaurantName(merchant.getRestaurantName())
+                .bankName(merchant.getBankName())
+                .bankAccountNumber(merchant.getBankAccountNumber())
+                .bankAccountHolder(merchant.getBankAccountHolder())
+                .hasLinkedBank(hasLinkedBank)
+                .build();
+    }
+
+
+    /**
+     * Helper method: Kiểm tra có withdrawal request đang pending không
+     */
+    private boolean hasWithdrawalRequests(Long merchantId) {
+        // Implement logic check trong WithdrawalRequestRepository
+        // Ví dụ:
+        // return withdrawalRequestRepository
+        //     .existsByMerchantIdAndStatus(merchantId, WithdrawalStatus.PENDING);
+
+        // Tạm thời return false nếu chưa có repository
+        return false;
     }
 }

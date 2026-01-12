@@ -45,4 +45,10 @@ public enum NotificationType {
     REFUND_FAILED,         // User/Admin nhận thông báo hoàn tiền thất bại
     REFUND_CANCELLED,      // User nhận thông báo yêu cầu bị hủy
 
+    // Withdrawal notifications (THÊM MỚI)
+    WITHDRAWAL_REQUESTED,
+    WITHDRAWAL_APPROVED,
+    WITHDRAWAL_REJECTED,
+    CONTRACT_LIQUIDATED,
+
 }

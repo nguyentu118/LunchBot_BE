@@ -47,7 +47,7 @@ public class ShippingPartnerController {
     @PatchMapping("/{id}/toggle-lock")
     public ResponseEntity<?> toggleLock(
             @PathVariable Long id,
-            @Valid @RequestBody ShippingPartnerRequest request) {  // @Valid để trigger validation
+            @RequestBody ShippingPartnerRequest request) {  // @Valid để trigger validation
         try {
             // ✅ Validate lockReason không trống
             if (request.getLockReason() == null || request.getLockReason().trim().isEmpty()) {

@@ -1,9 +1,7 @@
 # Environment files - KHÔNG PUSH
-.env
-.env.local
 .env.docker
 .env.production
-.env.*.local
+.env
 
 # Logs
 *.log
@@ -33,3 +31,4 @@ mvnw.cmd
 # Exclude extra files
 *.zip
 *.ps1
+claims/
