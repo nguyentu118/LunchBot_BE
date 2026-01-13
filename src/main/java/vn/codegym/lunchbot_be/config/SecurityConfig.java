@@ -82,6 +82,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/public/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "api/dishes/suggested",
                                 "/api/dishes/{dishId}",
+                                ("/api/ws/**"),
+                                ("/ws/**"),
+                                ("/api/ws/info"),
                                 "/actuator/health",
                                 "/actuator/info",
                                 "/api/merchants/profile/{merchantId}",
