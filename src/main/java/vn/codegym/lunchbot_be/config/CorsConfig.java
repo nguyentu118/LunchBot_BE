@@ -23,7 +23,8 @@ public class CorsConfig {
                 "http://localhost:80",
                 "http://localhost:5173",
                 "http://localhost:3000",
-                "http://127.0.0.1:5173"
+                "http://127.0.0.1:5173",
+                "https://*.vercel.app"
         ));
 
         // Cho phép các HTTP methods
@@ -39,6 +40,8 @@ public class CorsConfig {
                 "Origin",
                 "X-Requested-With"
         ));
+
+        configuration.setAllowedHeaders(Arrays.asList("*"));
 
         // Cho phép gửi credentials (cookies, authorization headers)
         configuration.setAllowCredentials(true);
