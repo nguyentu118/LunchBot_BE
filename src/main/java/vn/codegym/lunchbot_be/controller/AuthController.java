@@ -14,7 +14,10 @@ import vn.codegym.lunchbot_be.dto.request.RegistrationRequest;
 import vn.codegym.lunchbot_be.service.impl.AuthServiceImpl;
 
 import java.util.stream.Collectors;
-
+@CrossOrigin(origins = {
+        "http://localhost:5173",
+        "https://lunch-bot-fe.vercel.app"
+})
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
