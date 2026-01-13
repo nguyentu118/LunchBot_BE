@@ -95,60 +95,48 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
                     // CONNECT command
                     if (StompCommand.CONNECT.equals(command)) {
-                        // Check connection attempts
-                        AtomicInteger attempts = connectionAttempts.computeIfAbsent(
-                                sessionId, k -> new AtomicInteger(0)
-                        );
-
-                        int attemptCount = attempts.incrementAndGet();
-                        if (attemptCount > MAX_CONNECTION_ATTEMPTS) {
-                            log.warn("Max connection attempts ({}) exceeded for session: {}",
-                                    MAX_CONNECTION_ATTEMPTS, sessionId);
-                            connectionAttempts.remove(sessionId);
-                            return null; // Reject connection
-                        }
-
-                        log.debug("WebSocket CONNECT attempt {} for session: {}", attemptCount, sessionId);
-
                         String authHeader = accessor.getFirstNativeHeader("Authorization");
 
-                        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                            String token = authHeader.substring(7);
+                        // ✅ CHO PHÉP ANONYMOUS - Kiểm tra token NẾU CÓ
+                        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                            // ✅ KHÔNG CÓ TOKEN - Cho phép anonymous connection
+                            log.info("✅ WebSocket anonymous connection: session={}", sessionId);
+                            return message; // ✅ CHO PHÉP kết nối
+                        }
 
-                            try {
-                                if (jwtUtil.validateToken(token)) {
-                                    String email = jwtUtil.extractEmail(token);
-                                    Long userId = jwtUtil.extractUserId(token);
-                                    Collection<? extends GrantedAuthority> authorities =
-                                            jwtUtil.getAuthorities(token);
+                        // CÓ TOKEN - Validate và authenticate
+                        String token = authHeader.substring(7);
 
-                                    UsernamePasswordAuthenticationToken authentication =
-                                            new UsernamePasswordAuthenticationToken(email, null, authorities);
-                                    authentication.setDetails(userId);
-                                    accessor.setUser(authentication);
+                        try {
+                            if (jwtUtil.validateToken(token)) {
+                                String email = jwtUtil.extractEmail(token);
+                                Long userId = jwtUtil.extractUserId(token);
+                                Collection<? extends GrantedAuthority> authorities =
+                                        jwtUtil.getAuthorities(token);
 
-                                    // Reset attempts on successful auth
-                                    connectionAttempts.remove(sessionId);
-                                    log.info("WebSocket authenticated: user={}, session={}", email, sessionId);
+                                UsernamePasswordAuthenticationToken authentication =
+                                        new UsernamePasswordAuthenticationToken(email, null, authorities);
+                                authentication.setDetails(userId);
+                                accessor.setUser(authentication);
 
-                                } else {
-                                    log.warn("Invalid JWT token for session: {}", sessionId);
-                                    return null;
-                                }
-                            } catch (Exception e) {
-                                log.error("JWT validation error for session {}: {}", sessionId, e.getMessage());
-                                return null;
+                                log.info("✅ WebSocket authenticated: user={}, session={}", email, sessionId);
+                            } else {
+                                log.warn("⚠️ Invalid JWT token, allowing anonymous: session={}", sessionId);
+                                // ✅ Token không hợp lệ nhưng VẪN CHO PHÉP connect
+                                return message;
                             }
-                        } else {
-                            log.warn("Missing or invalid Authorization header for session: {}", sessionId);
-                            return null;
+                        } catch (Exception e) {
+                            log.error("❌ JWT validation error, allowing anonymous: session={}, error={}",
+                                    sessionId, e.getMessage());
+                            // ✅ Lỗi validate nhưng VẪN CHO PHÉP connect
+                            return message;
                         }
                     }
 
                     // DISCONNECT command
                     else if (StompCommand.DISCONNECT.equals(command)) {
                         String user = accessor.getUser() != null ? accessor.getUser().getName() : "anonymous";
-                        log.info("WebSocket DISCONNECT: user={}, session={}", user, sessionId);
+                        log.info("🔌 WebSocket DISCONNECT: user={}, session={}", user, sessionId);
                         connectionAttempts.remove(sessionId);
                     }
 
@@ -156,21 +144,21 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     else if (StompCommand.SUBSCRIBE.equals(command)) {
                         String destination = accessor.getDestination();
                         String user = accessor.getUser() != null ? accessor.getUser().getName() : "anonymous";
-                        log.debug("WebSocket SUBSCRIBE: user={}, destination={}, session={}",
+                        log.debug("📬 WebSocket SUBSCRIBE: user={}, destination={}, session={}",
                                 user, destination, sessionId);
                     }
 
                     // UNSUBSCRIBE command
                     else if (StompCommand.UNSUBSCRIBE.equals(command)) {
                         String user = accessor.getUser() != null ? accessor.getUser().getName() : "anonymous";
-                        log.debug("WebSocket UNSUBSCRIBE: user={}, session={}", user, sessionId);
+                        log.debug("🔌 WebSocket UNSUBSCRIBE: user={}, session={}", user, sessionId);
                     }
 
                     // SEND command
                     else if (StompCommand.SEND.equals(command)) {
                         String destination = accessor.getDestination();
                         String user = accessor.getUser() != null ? accessor.getUser().getName() : "anonymous";
-                        log.debug("WebSocket SEND: user={}, destination={}, session={}",
+                        log.debug("📤 WebSocket SEND: user={}, destination={}, session={}",
                                 user, destination, sessionId);
                     }
                 }
@@ -185,9 +173,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
                     if (accessor != null) {
                         String sessionId = accessor.getSessionId();
-                        log.error("Error sending WebSocket message for session {}: {}",
+                        log.error("❌ Error sending WebSocket message: session={}, error={}",
                                 sessionId, ex.getMessage());
-                        // Clean up on error
                         connectionAttempts.remove(sessionId);
                     }
                 }
