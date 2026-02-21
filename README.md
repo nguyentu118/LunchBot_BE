@@ -8,6 +8,11 @@ This project demonstrates backend development skills using Spring Boot, JWT auth
 
 ---
 
+## 🌐 Live Demo
+https://lunch-bot-fe.vercel.app
+
+---
+
 ## 🛠 Tech Stack
 - Java 17
 - Spring Boot
